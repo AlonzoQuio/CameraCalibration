@@ -5,11 +5,9 @@
 
 using namespace cv;
 
-/** @function main */
-int main( int argc, char** argv )
-{
+Mat edgeDetector(Mat src){
 
-  Mat src, src_gray;
+  Mat  src_gray;
   Mat grad;
   int scale = 1;
   int delta = 0;
@@ -17,19 +15,11 @@ int main( int argc, char** argv )
 
   int c;
 
-  /// Load an image
-  src = imread( "img.png" );
-
-  if( !src.data )
-  { return -1; }
 
   GaussianBlur( src, src, Size(3,3), 0, 0, BORDER_DEFAULT );
 
   /// Convert it to gray
   cvtColor( src, src_gray, CV_BGR2GRAY );
-
-  /// Create window
-  namedWindow( "Sobel Demo - Simple Edge Detector", CV_WINDOW_AUTOSIZE );
 
   /// Generate grad_x and grad_y
   Mat grad_x, grad_y;
@@ -47,10 +37,26 @@ int main( int argc, char** argv )
 
   /// Total Gradient (approximate)
   addWeighted( abs_grad_x, 0.5, abs_grad_y, 0.5, 0, grad );
+  return grad;
+}
 
-  imshow( window_name, grad );
+/** @function main */
+int main( int argc, char** argv )
+{
+  /// Load an image
+  Mat src = imread( "img.png" );
+
+  if( !src.data )
+  { return -1; }
+
+  Mat grad = edgeDetector(src);
+
+
+  /// Create window
+  namedWindow( "Sobel Demo - Simple Edge Detector", CV_WINDOW_AUTOSIZE );
+  imshow( "Sobel Demo - Simple Edge Detector", grad );
 
   waitKey(0);
 
   return 0;
-  }
+}
