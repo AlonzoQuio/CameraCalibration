@@ -10,9 +10,9 @@ int main( int argc, char** argv ) {
     int wait_key = 60;
     
     //VideoCapture cap("/home/alonzo/Documentos/Projects/CameraCalibration_2/video/calibration_mslifecam.avi");
-    //VideoCapture cap("/home/alonzo/Documentos/Projects/CameraCalibration_2/video/calibration_kinectv2.avi");
+    VideoCapture cap("/home/alonzo/Documentos/Projects/CameraCalibration_2/video/calibration_kinectv2.avi");
     //VideoCapture cap("/home/alonzo/Documentos/Projects/CameraCalibration_2/video/calibration_ps3eyecam.avi");
-    VideoCapture cap("/home/alonzo/Documentos/Projects/CameraCalibration_2/video/calibration_realsense.avi");
+    //VideoCapture cap("/home/alonzo/Documentos/Projects/CameraCalibration_2/video/calibration_realsense.avi");
     //VideoCapture cap("/home/alonzo/Documentos/Projects/CameraCalibration_2/video/calibration_ps3eyecam.avi");
 
     if ( !cap.isOpened() ) {
@@ -24,7 +24,9 @@ int main( int argc, char** argv ) {
     double fps = cap.get(CV_CAP_PROP_FPS);
     int w = frame.rows;
     int h = frame.cols;
-
+    namedWindow("Result",WINDOW_NORMAL);
+    resizeWindow("Result", 640,640);
+    moveWindow("Result", 0,0);
     while (1) {
         if (!cap.read(frame)) {
             cout << "\n Cannot read the video file. \n";
@@ -43,7 +45,7 @@ int main( int argc, char** argv ) {
 
         morphologyEx(edges, edges, MORPH_CLOSE, kernel);
         find_points(edges, frame );
-        imshow( "Original", frame );
+        imshow( "Result", frame );
 
         char t = (char)waitKey(wait_key);
         if ( t == 27)
