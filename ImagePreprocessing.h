@@ -151,3 +151,31 @@ void equalizar_histograma(Mat& imagen, int width, int height) {
         }
     }
 }
+Mat CannyEdgeDetector(Mat src) {
+    int edgeThresh = 1;
+    int lowThreshold = 50;
+    int const max_lowThreshold = 100;
+    int ratio = 3;
+    int kernel_size = 3;
+
+    Mat dst, detected_edges, src_gray;
+
+    /// Convert the image to grayscale
+    cvtColor( src, src_gray, CV_BGR2GRAY );
+
+    /// Reduce noise with a kernel 3x3
+    blur( src_gray, detected_edges, Size(3, 3) );
+
+    /// Canny detector
+    Canny( detected_edges, detected_edges, lowThreshold, lowThreshold * ratio, kernel_size );
+
+    /// Using Canny's output as a mask, we display our result
+    dst = Scalar::all(0);
+
+    src_gray.copyTo( dst, detected_edges);
+
+    /// Apply Histogram Equalization
+    // cv::equalizeHist( dst, dst );
+
+    return dst;
+}

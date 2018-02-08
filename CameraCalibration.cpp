@@ -5,45 +5,56 @@
 using namespace cv;
 using namespace std;
 
-#define THRESHOLD 30
-
 int main( int argc, char** argv ) {
-    Mat src, src_gray;
-    //VideoCapture cap("calibration_videos/calibration_realsense.avi");
-    //VideoCapture cap("calibration_videos/calibration_ps3eyecam.avi");
-    VideoCapture cap("calibration_videos/calibration_mslifecam.avi");
-    //VideoCapture cap("calibration_videos/calibration_kinectv2.avi");
-    //VideoCapture cap("calibration_videos/PadronAnillos_02.avi");
-    if (!cap.isOpened()) {
+    Mat frame;
+    int wait_key = 60;
+    
+    //VideoCapture cap("/home/alonzo/Documentos/Projects/CameraCalibration_2/video/calibration_mslifecam.avi");
+    //VideoCapture cap("/home/alonzo/Documentos/Projects/CameraCalibration_2/video/calibration_kinectv2.avi");
+    //VideoCapture cap("/home/alonzo/Documentos/Projects/CameraCalibration_2/video/calibration_ps3eyecam.avi");
+    VideoCapture cap("/home/alonzo/Documentos/Projects/CameraCalibration_2/video/calibration_realsense.avi");
+    //VideoCapture cap("/home/alonzo/Documentos/Projects/CameraCalibration_2/video/calibration_ps3eyecam.avi");
+
+    if ( !cap.isOpened() ) {
         cout << "Cannot open the video file. \n";
         return -1;
     }
-    cap.read(src);
+
+    cap.read(frame);
     double fps = cap.get(CV_CAP_PROP_FPS);
-    int w = src.rows;
-    int h = src.cols;
+    int w = frame.rows;
+    int h = frame.cols;
+
     while (1) {
-        if (!cap.read(src)){
+        if (!cap.read(frame)) {
             cout << "\n Cannot read the video file. \n";
             break;
         }
 
-        equalizar_histograma(src, w, h);
-        //clean_other_colors(src, w, h);
-        rgb_to_gray(src, w, h);
-        segmentar(src, src, w, h);
+        equalizar_histograma(frame, w, h);
+        //rgb_to_gray(frame, w, h);
+        //segmentar(frame, frame, w, h);
+        Mat edges = CannyEdgeDetector(frame);
 
-        /// Convert image to gray and blur it
-        cvtColor( src, src_gray, CV_BGR2GRAY );
-        blur( src_gray, src_gray, Size(3, 3) );
-        // Find pattern
-        find_pattern(src_gray, THRESHOLD);
-        
-        imshow( "source_window", src );
+        int erosion_size = 1;
+        Mat kernel = getStructuringElement( MORPH_ELLIPSE,
+                                            Size( 2 * erosion_size + 1, 2 * erosion_size + 1 ),
+                                            Point( erosion_size, erosion_size ) );
 
-        int c = waitKey(20);
-        if ( (char)c == 27 ) {
+        morphologyEx(edges, edges, MORPH_CLOSE, kernel);
+        find_points(edges, frame );
+        imshow( "Original", frame );
+
+        char t = (char)waitKey(wait_key);
+        if ( t == 27)
             break;
+        if (t == ' ') {
+            if (wait_key == 0) {
+                wait_key = 1000;
+            } else {
+                wait_key = 0;
+            }
         }
     }
+    return 0;
 }
