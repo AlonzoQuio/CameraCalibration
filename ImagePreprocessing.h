@@ -72,7 +72,7 @@ void segmentar(Mat &in, Mat &out, int w, int h/*, int **intImg*/) {
                 count = (x2 - x1) * (y2 - y1);
                 sum = intImg[x2][y2] - intImg[x2][y1 - 1] - intImg[x1 - 1][y2] + intImg[x1 - 1][y1 - 1];
                 MatPixel& pixel = in.at<MatPixel>(i, j);
-                MatPixel& pixel_o = in.at<MatPixel>(i, j);
+                MatPixel& pixel_o = out.at<MatPixel>(i, j);
                 if (pixel.r * count <= sum * (100 - t) / 100) {
                     pixel_o.r = 0;
                     pixel_o.g = 0;
@@ -82,8 +82,18 @@ void segmentar(Mat &in, Mat &out, int w, int h/*, int **intImg*/) {
                     pixel_o.g = 255;
                     pixel_o.b = 255;
                 }
+            }else{
+                MatPixel& pixel_o = out.at<MatPixel>(i, j);
+                int c = (pixel_o.r + pixel_o.g+ pixel_o.b)/3;
+                if(c < 150){
+                    c = 0;
+                }else{
+                    c=255;
+                }
+                pixel_o.r = c;
+                pixel_o.g = c;
+                pixel_o.b = c;
             }
-
         }
     }
     //int **intImg = new int*[w];

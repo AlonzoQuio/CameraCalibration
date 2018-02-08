@@ -4,7 +4,7 @@
 using namespace cv;
 using namespace std;
 void clean_from_elipses(Mat &out, vector<Point2f> pattern_centers);
-void find_points(Mat &src_gray, Mat&original) {
+void find_points(Mat &src_gray, Mat&original,vector<Point2f> &pattern_points,int &keep_per_frames) {
     int thresh = 30;
 
     Mat threshold_output;
@@ -32,13 +32,14 @@ void find_points(Mat &src_gray, Mat&original) {
     int nroCircles = 2;
     int count = 0;
     for ( int i = 0; i < contours.size(); i++ ){
-        Rect rect1 = minEllipse[i].boundingRect() ;
-        Point2f center1 = (rect1.br() + rect1.tl()) * 0.5;
+        //circle(original,minEllipse[i].center,10,Scalar(0,0,255));
+        //Rect rect1 = minEllipse[i].boundingRect() ;
+        Point2f center1 = minEllipse[i].center;//(rect1.br() + rect1.tl()) * 0.5;
         for ( int j = 0; j < contours.size(); j++ ) {
             if (i == j) continue;
 
-            Rect rect2 = minEllipse[j].boundingRect() ;
-            Point2f center2 = (rect2.br() + rect2.tl()) * 0.5;
+            //Rect rect2 = minEllipse[j].boundingRect() ;
+            Point2f center2 = minEllipse[j].center;//(rect2.br() + rect2.tl()) * 0.5;
 
             if (cv::norm(center1 - center2) <= minRadius){
                 count++;
@@ -53,17 +54,17 @@ void find_points(Mat &src_gray, Mat&original) {
     }
 
     //cout << "size: " << concentric.size() << endl;
-    // for (int j = 0; j < concentric.size(); ++j)
-    // {
-    //  int thickness = -1;
-    //  int lineType = 8;
-    //  circle( drawing,
-    //          concentric[j],
-    //          3,
-    //          Scalar( 255, 255, 255 ),
-    //          thickness,
-    //          lineType );
-    // }
+    //for (int j = 0; j < concentric.size(); ++j)
+    //{
+    // int thickness = -1;
+    // int lineType = 8;
+    // circle( original,
+    //         concentric[j],
+    //         10,
+    //         Scalar( 0, 255, 255 ),
+    //         thickness,
+    //         lineType );
+    //}
     /**************************************************/
 
     vector<vector<Point2f>> points;
@@ -101,18 +102,24 @@ void find_points(Mat &src_gray, Mat&original) {
         medianPoints.push_back( Point2f(median.x / points[i].size(), median.y / points[i].size()) );
     }
 
-    if (points.size() == 20)
+    if (points.size() == 20){
+        pattern_points.clear();
         for (int i = 0; i < medianPoints.size(); ++i) {
             int thickness = -1;
             int lineType = 8;
             circle( original,
                     medianPoints[i],
                     3,
-                    Scalar( 255, 255, 255 ),
+                    Scalar( 0, 255, 0 ),
                     thickness,
                     lineType );
-        clean_from_elipses(original, medianPoints);
+            pattern_points.push_back(medianPoints[i]);
+            keep_per_frames = 2;
         }
+    }
+    if(keep_per_frames-->0){
+        clean_from_elipses(original, pattern_points);
+    }
 }
 float angle_between_two_points(Point2f p1, Point2f p2) {
     float angle = atan2(p1.y - p2.y, p1.x - p2.x);
@@ -150,7 +157,9 @@ vector<Point2f> more_distante_points(vector<Point2f>points) {
     return p;
 }
 void clean_from_elipses(Mat &drawing, vector<Point2f> pattern_centers) {
-
+    if(pattern_centers.size()==0){
+        return;
+    }
     vector<Scalar> color_palette(5);
     color_palette[0] = Scalar(255, 0, 255);
     color_palette[1] = Scalar(255, 0, 0);
