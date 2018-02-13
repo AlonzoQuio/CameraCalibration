@@ -5,12 +5,17 @@
 using namespace cv;
 using namespace std;
 
+
+
 int main( int argc, char** argv ) {
-    Mat frame;
+    Mat frame, frame_gray;
     int wait_key = 60;
     int keep_per_frames = 2;
-    //VideoCapture cap("calibration_videos/calibration_mslifecam.avi");
-    VideoCapture cap("calibration_videos/calibration_ps3eyecam.avi");
+    // VideoCapture cap("calibration_videos/calibration_mslifecam.avi");
+    VideoCapture cap("../videos/calibration_mslifecam.avi");
+    // VideoCapture cap("calibration_videos/calibration_ps3eyecam.avi");
+    // VideoCapture cap("../videos/calibration_ps3eyecam.avi");
+
     //VideoCapture cap("/home/alonzo/Documentos/Projects/CameraCalibration_2/video/calibration_mslifecam.avi");
     //VideoCapture cap("/home/alonzo/Documentos/Projects/CameraCalibration_2/video/calibration_kinectv2.avi");
     //VideoCapture cap("/home/alonzo/Documentos/Projects/CameraCalibration_2/video/calibration_ps3eyecam.avi");
@@ -36,20 +41,31 @@ int main( int argc, char** argv ) {
             break;
         }
 
-        //equalizar_histograma(frame, w, h);
-        //rgb_to_gray(frame, w, h);
-        //segmentar(frame, frame, w, h);
-        Mat edges = CannyEdgeDetector(frame);
 
-        int erosion_size = 1;
-        Mat kernel = getStructuringElement( MORPH_ELLIPSE,
-                                            Size( 2 * erosion_size + 1, 2 * erosion_size + 1 ),
-                                            Point( erosion_size, erosion_size ) );
-        //Mat edges;
-        //cvtColor( frame, edges, CV_BGR2GRAY );
-        //blur( edges, edges, Size(3, 3) );
-        morphologyEx(edges, edges, MORPH_CLOSE, kernel);
-        find_points(edges, frame,pattern_points,keep_per_frames);
+
+        frame = equalizeIntensity(frame);
+        // equalizar_histograma(src, w, h);
+        // imshow( "Equalized", frame );
+
+
+        //clean_other_colors(src, w, h);
+        rgb_to_gray(frame, w, h);
+
+        segmentar(frame, frame, w, h);
+
+
+
+
+        /// Convert image to gray and blur it
+        cvtColor( frame, frame_gray, CV_BGR2GRAY );
+        // blur( src_gray, src_gray, Size(3, 3) );
+        GaussianBlur( frame_gray, frame_gray, Size( 3, 3 ), 0, 0 );
+
+
+        find_points(frame_gray, frame, pattern_points, keep_per_frames);
+
+
+
         imshow( "Result", frame );
 
         char t = (char)waitKey(wait_key);

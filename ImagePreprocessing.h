@@ -1,7 +1,9 @@
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
+#include <vector>
 
 using namespace cv;
+using namespace std;
 struct MatPixel {
     uchar b;
     uchar g;
@@ -102,6 +104,31 @@ void segmentar(Mat &in, Mat &out, int w, int h/*, int **intImg*/) {
     }
     delete intImg;
 }
+
+Mat equalizeIntensity(const Mat& inputImage)
+{
+    if(inputImage.channels() >= 3)
+    {
+        Mat ycrcb;
+
+        cvtColor(inputImage,ycrcb,CV_BGR2YCrCb);
+
+        vector<Mat> channels;
+        split(ycrcb,channels);
+
+        equalizeHist(channels[0], channels[0]);
+
+        Mat result;
+        merge(channels,ycrcb);
+
+        cvtColor(ycrcb,result,CV_YCrCb2BGR);
+
+        return result;
+    }
+    return Mat();
+}
+
+
 void equalizar_histograma(Mat& imagen, int width, int height) {
     int *h_r, *h_g, *h_b;
     h_r = new int[256];

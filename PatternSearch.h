@@ -4,119 +4,250 @@
 using namespace cv;
 using namespace std;
 void clean_from_elipses(Mat &out, vector<Point2f> pattern_centers);
+
+
+float average(vector<float> data)
+{
+    float sum = 0;
+    for (int i = 0; i < data.size(); ++i)
+        sum += data[i];
+
+    return sum / data.size();
+}
+
 void find_points(Mat &src_gray, Mat&original,vector<Point2f> &pattern_points,int &keep_per_frames) {
-    int thresh = 30;
+    
+
 
     Mat threshold_output;
     vector<vector<Point> > contours;
     vector<Vec4i> hierarchy;
+    Point2f center, center_2;
+
+    int THRESHOLD = 30;
 
     /// Detect edges using Threshold
-    threshold( src_gray, threshold_output, thresh, 255, THRESH_BINARY );
+    threshold( src_gray, threshold_output, THRESHOLD, 255, THRESH_BINARY );
+
+
+    //Dilate
+    int erosion_size = 2;
+    Mat kernel = getStructuringElement( MORPH_ELLIPSE,
+                                        Size( 2 * erosion_size + 1, 2 * erosion_size + 1 ),
+                                        Point( erosion_size, erosion_size ) );
+
+    erode( threshold_output, threshold_output, kernel );
+    // erode( threshold_output, threshold_output, kernel );
+    // erode( threshold_output, threshold_output, kernel );
+
+    // morphologyEx(threshold_output, threshold_output, MORPH_CLOSE, kernel);
+
+    // cv::resize(threshold_output, threshold_output, Size(600, 600));
+    imshow( "source_window", threshold_output );
+
+
+
     /// Find contours
-    findContours( threshold_output, contours, hierarchy, CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
+    findContours( threshold_output, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
 
-    /// Find the rotated rectangles and ellipses for each contour
-    vector<cv::RotatedRect> minRect( contours.size() );
-    vector<cv::RotatedRect> minEllipse( contours.size() );
 
-    for ( int i = 0; i < contours.size(); i++ ) {
-        minRect[i] = minAreaRect( Mat(contours[i]) );
-        if ( contours[i].size() > 5 ){
-            minEllipse[i] = fitEllipse( Mat(contours[i]) );
+    vector<vector<Point> > contours_temp;
+    vector<RotatedRect>    ellipses_temp;
+
+    for (int contour = 0; contour < contours.size(); ++contour)
+    {
+        if (hierarchy[contour][2] != -1) { //si tiene un hijo
+
+            int padre = contour;
+            int hijo  = hierarchy[contour][2];
+
+            if ( contours[padre].size() > 7 && contours[hijo].size() > 7 ) {
+                RotatedRect elipseHijo  = fitEllipse( Mat(contours[hijo]) );
+                RotatedRect elipsePadre = fitEllipse( Mat(contours[padre]) );
+
+                if ( cv::norm(elipsePadre.center - elipseHijo.center) < 15) { //CALIBRAR DE ACUERDO A VIDEO
+                    contours_temp.push_back(contours[padre] );
+                    ellipses_temp.push_back(elipsePadre);
+
+                    //  Find the area of contour
+                    // double area=contourArea( contours[padre],false);
+                    // cout<<area<<endl;
+                }
+            }
         }
     }
 
-    vector<Point2f> concentric;
-    float minRadius = 2.00f;
-    int nroCircles = 2;
-    int count = 0;
-    for ( int i = 0; i < contours.size(); i++ ){
-        //circle(original,minEllipse[i].center,10,Scalar(0,0,255));
-        //Rect rect1 = minEllipse[i].boundingRect() ;
-        Point2f center1 = minEllipse[i].center;//(rect1.br() + rect1.tl()) * 0.5;
-        for ( int j = 0; j < contours.size(); j++ ) {
+    /************ MIN DISTANCE ***************/
+    vector<float> minAdjDistances;
+
+    // cout << "Min distances" << endl;
+    // find min distance for every ellipse center
+    for (int i = 0; i < ellipses_temp.size(); ++i)
+    {
+        float minDistance = 1000000;
+        for (int j = 0; j < ellipses_temp.size(); ++j)  //find min distance
+        {
             if (i == j) continue;
 
-            //Rect rect2 = minEllipse[j].boundingRect() ;
-            Point2f center2 = minEllipse[j].center;//(rect2.br() + rect2.tl()) * 0.5;
+            float distance = cv::norm(ellipses_temp[i].center - ellipses_temp[j].center);
 
-            if (cv::norm(center1 - center2) <= minRadius){
-                count++;
-            }
+            if (distance < minDistance )
+                minDistance = distance;
+        }
+        if (minDistance > 18 &&  minDistance < 70) //CALCULAR ACUERDO AL VIDEO
+        {
+            // cout << minDistance << endl;
+            minAdjDistances.push_back(minDistance);
+        }
+    }
 
-            if (count == nroCircles) {
-                concentric.push_back(center1);
+    // cout << "minAdjDistances size: " << minAdjDistances.size() << endl;
+    float mean = average(minAdjDistances);
+
+    
+
+    // cout << "mean: " << mean << endl;
+    /************ end MIN DISTANCE ***************/
+
+
+    /************ CLUSTER ELIPSE MODELO BASED ON THE MEAN ***************/
+    //obtener propiedades caracteristicas de las ellipses
+    vector<RotatedRect> cluster_ellipse_model;
+    int counter = 0;
+    for (int i = 0; i < ellipses_temp.size(); ++i)
+    {
+        for (int j = 0; j < ellipses_temp.size(); ++j)
+        {
+            if (i == j) continue;
+
+            float distance = cv::norm(ellipses_temp[i].center - ellipses_temp[j].center);
+
+            if (distance < 2 * mean ) //AJUSTAR POR VIDEO
+                counter++;
+
+            if (counter == 4) {
+                cluster_ellipse_model.push_back(ellipses_temp[i]);
                 break;
             }
         }
-        count = 0;
+        counter = 0;
     }
 
-    //cout << "size: " << concentric.size() << endl;
-    //for (int j = 0; j < concentric.size(); ++j)
-    //{
-    // int thickness = -1;
-    // int lineType = 8;
-    // circle( original,
-    //         concentric[j],
-    //         10,
-    //         Scalar( 0, 255, 255 ),
-    //         thickness,
-    //         lineType );
-    //}
-    /**************************************************/
+    float avg_width, avg_height, sum_width = 0.0, sum_height = 0.0;
 
-    vector<vector<Point2f>> points;
-    minRadius = 8.50f;
-    while ( concentric.size() != 0 ){
-        Point2f point = concentric[0];
+    for (int i = 0; i < cluster_ellipse_model.size(); ++i)
+    {
+        sum_height += cluster_ellipse_model[i].size.height;
+        sum_width += cluster_ellipse_model[i].size.width;
+    }
+    avg_width = sum_width / cluster_ellipse_model.size();
+    avg_height = sum_height / cluster_ellipse_model.size();
 
-        vector<Point2f> temp;
-        temp.push_back(point);
+    // cout << "avg_width: " << avg_width << endl;
+    // cout << "avg_height: " << avg_height << endl;
 
-        for (int j = 1; j < concentric.size(); ++j){
-            if (cv::norm(point - concentric[j]) < minRadius){
-                temp.push_back(concentric[j]);
+    /************ END CLUSTER ELIPSE MODELO BASED ON THE MEAN ***************/
+
+
+    /************ FIND ELLIPSES v2 BASED ON SOME CONDITIONS ****************/
+
+    // vector<RotatedRect> ellipses_temp_v2;
+    // for (int contour = 0; contour < contours.size(); ++contour)
+    // {
+    //     if ( contours[contour].size() > 5 ) {
+
+    //         RotatedRect ellipse = fitEllipse( Mat(contours[contour]) );
+
+    //         //si el error relativo es menor del 30%
+    //         if (abs(ellipse.size.width - avg_width) / ellipse.size.width < 0.30 &&
+    //             abs(ellipse.size.height - avg_height) / ellipse.size.height < 0.30 )
+    //         {
+    //             ellipses_temp_v2.push_back(ellipse);
+    //         }
+    //     }
+    // }
+    /************ END FIND ELLIPSES v2 BASED ON SOME CONDITIONS ****************/
+
+
+    /************ CLUSTER CONTROL POINTS BASED ON THE MEAN  ***************/
+    vector<RotatedRect> cluster;
+    for (int i = 0; i < ellipses_temp.size(); ++i)
+    {
+        for (int j = 0; j < ellipses_temp.size(); ++j)
+        {
+            if (i == j) continue;
+
+            float distance = cv::norm(ellipses_temp[i].center - ellipses_temp[j].center);
+
+            //si el error relativo es menor del 10% y tiene un vecino
+            if (abs(ellipses_temp[i].size.width - avg_width) / ellipses_temp[i].size.width < 0.25 &&
+                    abs(ellipses_temp[i].size.height - avg_height) / ellipses_temp[i].size.height < 0.25 &&
+                    distance < 1.5 * mean)
+            {
+                cluster.push_back(ellipses_temp[i]);
+                break;
             }
         }
-
-        if (temp.size() >= 2 && temp.size() <= 5){
-            points.push_back(temp);
-        }
-
-        for (int i = 0; i < temp.size(); i++){
-            concentric.erase(  std::remove(concentric.begin(), concentric.end(), temp[i])  , concentric.end()  );
-        }
-    }
-    // cout << "temp: " << temp.size() << endl;
-    //cout << "nro de cluster: " << points.size() << endl;
-    //cout << "concentric size: " << concentric.size() << endl;
-
-    vector<Point2f> medianPoints;
-
-    for (int i = 0; i < points.size(); ++i) {
-        Point2f median(0.0f, 0.0f);
-        for (int j = 0; j < points[i].size(); ++j)
-            median += points[i][j];
-        medianPoints.push_back( Point2f(median.x / points[i].size(), median.y / points[i].size()) );
     }
 
-    if (points.size() == 20){
+    // counter = 0;
+    // for (int i = 0; i < ellipses_temp_v2.size(); ++i)
+    // {
+    //     for (int j = 0; j < ellipses_temp_v2.size(); ++j)
+    //     {
+    //         if (i == j) continue;
+
+    //         float distance = cv::norm(ellipses_temp_v2[i].center - ellipses_temp_v2[j].center);
+
+    //         //si el error relativo es menor del 10% y tiene un vecino
+    //         if (abs(ellipses_temp_v2[i].size.width - avg_width) / ellipses_temp_v2[i].size.width        < 0.25 &&
+    //             abs(ellipses_temp_v2[i].size.height - avg_height) / ellipses_temp_v2[i].size.height < 0.25 &&
+    //                 distance < 1.9 * mean) // has to be different from the one used to fit ellipses_temp_v2
+    //         {
+    //             counter++;
+    //         }
+
+    //         if (counter == 2)
+    //         {
+    //             cluster.push_back(ellipses_temp_v2[i]);
+    //             break;
+    //         }
+    //     }
+    //     counter = 0;
+    // }
+    /************ END CLUSTER BASED ON THE MEAN AND SD ***************/
+
+    // cout << "cluster.size(): " << cluster.size() << endl;
+    // cout << "contours_temp size: " << contours_temp.size() << endl;
+
+
+  
+
+
+
+    
+
+
+
+
+
+
+    if (cluster.size() == 20){
         pattern_points.clear();
-        for (int i = 0; i < medianPoints.size(); ++i) {
+        for (int i = 0; i < cluster.size(); ++i) {
             int thickness = -1;
             int lineType = 8;
             circle( original,
-                    medianPoints[i],
+                    cluster[i].center,
                     3,
                     Scalar( 0, 255, 0 ),
                     thickness,
                     lineType );
-            pattern_points.push_back(medianPoints[i]);
+            pattern_points.push_back(cluster[i].center);
             keep_per_frames = 2;
         }
     }
+
     if(keep_per_frames-->0){
         clean_from_elipses(original, pattern_points);
     }
