@@ -9,22 +9,7 @@ struct MatPixel {
     uchar g;
     uchar r;
 };
-void clean_other_colors(Mat &imagen, int width, int height) {
-    //0.2126 * R + 0.7152 * G + 0.0722 * B
-    int c;
-    int boundary = 20;
-    for (int w = 0; w < width; w++) {
-        for (int h = 0; h < height; h++) {
-            MatPixel& pixel = imagen.at<MatPixel>(w, h);
-            if (abs(pixel.r - pixel.g) > boundary || abs(pixel.r - pixel.b) > boundary || abs(pixel.g - pixel.b) > boundary ) {
-                c = 255;
-                pixel.r = c;
-                pixel.g = c;
-                pixel.b = c;
-            }
-        }
-    }
-}
+
 void rgb_to_gray(Mat &imagen, int width, int height) {
     //0.2126 * R + 0.7152 * G + 0.0722 * B
     int c;
@@ -39,9 +24,6 @@ void rgb_to_gray(Mat &imagen, int width, int height) {
     }
 }
 void segmentar(Mat &in, Mat &out, int w, int h/*, int **intImg*/) {
-    //int w = in.rows;
-    //int h = in.cols;
-    //cout << w << " " << h << endl;
     int **intImg = new int*[w];
     for (int i = 0; i < w; i++) {
         intImg[i] = new int[h];
@@ -87,7 +69,7 @@ void segmentar(Mat &in, Mat &out, int w, int h/*, int **intImg*/) {
             }else{
                 MatPixel& pixel_o = out.at<MatPixel>(i, j);
                 int c = (pixel_o.r + pixel_o.g+ pixel_o.b)/3;
-                if(c < 150){
+                if(c < 100){
                     c = 0;
                 }else{
                     c=255;
@@ -107,8 +89,7 @@ void segmentar(Mat &in, Mat &out, int w, int h/*, int **intImg*/) {
 
 Mat equalizeIntensity(const Mat& inputImage)
 {
-    if(inputImage.channels() >= 3)
-    {
+    if(inputImage.channels() >= 3){
         Mat ycrcb;
 
         cvtColor(inputImage,ycrcb,CV_BGR2YCrCb);
@@ -188,31 +169,26 @@ void equalizar_histograma(Mat& imagen, int width, int height) {
         }
     }
 }
-Mat CannyEdgeDetector(Mat src) {
-    int edgeThresh = 1;
-    int lowThreshold = 50;
-    int const max_lowThreshold = 100;
-    int ratio = 3;
-    int kernel_size = 3;
 
-    Mat dst, detected_edges, src_gray;
+void clean_using_mask(Mat &imagen, int width, int height, Point mask_points[][4]) {
 
-    /// Convert the image to grayscale
-    cvtColor( src, src_gray, CV_BGR2GRAY );
+    const Point* ppt[1] = { mask_points[0] };
+    int npt[] = { 4 };
 
-    /// Reduce noise with a kernel 3x3
-    blur( src_gray, detected_edges, Size(3, 3) );
+    Mat mask = Mat::zeros( imagen.size(), CV_8UC3 );
 
-    /// Canny detector
-    Canny( detected_edges, detected_edges, lowThreshold, lowThreshold * ratio, kernel_size );
+    fillPoly( mask, ppt, npt, 1, Scalar( 255, 255, 255 ), 1 );
 
-    /// Using Canny's output as a mask, we display our result
-    dst = Scalar::all(0);
+    for (int w = 0; w < width; w++) {
+        for (int h = 0; h < height; h++) {
+            MatPixel& pixel = imagen.at<MatPixel>(w, h);
+            MatPixel& mask_value = mask.at<MatPixel>(w, h);
+            if(mask_value.r != 255){
+                pixel.r = 0;
+                pixel.g = 0;
+                pixel.b = 0;
+            }
+        }
+    }
 
-    src_gray.copyTo( dst, detected_edges);
-
-    /// Apply Histogram Equalization
-    // cv::equalizeHist( dst, dst );
-
-    return dst;
 }
