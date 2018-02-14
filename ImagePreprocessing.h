@@ -192,3 +192,56 @@ void clean_using_mask(Mat &imagen, int width, int height, Point mask_points[][4]
     }
 
 }
+void segmentar_bn(Mat &in, Mat &out, Mat adapThresh, int w, int h ) {
+
+    int **intImg = new int*[w];
+    for (int i = 0; i < w; i++) {
+        intImg[i] = new int[h];
+    }
+
+    int sum = 0;
+    for (int i = 0; i < w; i++) {
+        sum = 0;
+        for (int j = 0; j < h; j++) {
+            unsigned char & pixel = in.at<unsigned char >(i, j);
+            sum += pixel;
+            if (i == 0) {
+                intImg[i][j] = sum;
+            } else {
+                intImg[i][j] = intImg[i - 1][j] + sum;
+            }
+        }
+    }
+    int s = w / 8;
+    int t = 15;
+    int x1, x2, y1, y2;
+    int count;
+    for (int i = 0; i < w; i++) {
+        for (int j = 0; j < h; j++) {
+            x1 = i - s / 2;
+            x2 = i + s / 2;
+            y1 = j - s / 2;
+            y2 = j + s / 2;
+
+            if (x1 > 0 && x2 < w && y1 > 0 && y2 < h) {
+                count = (x2 - x1) * (y2 - y1);
+                sum = intImg[x2][y2] - intImg[x2][y1 - 1] - intImg[x1 - 1][y2] + intImg[x1 - 1][y1 - 1];
+                unsigned char & pixel = in.at<unsigned char >(i, j);
+                unsigned char & pixel_o = out.at<unsigned char >(i, j);
+                if (pixel * count <= sum * (100 - t) / 100) {
+                    pixel_o = 0;
+                } else {
+                    pixel_o = 255;
+                }
+            }else{
+                unsigned char & pixel_o = out.at<unsigned char >(i, j);
+                pixel_o = adapThresh.at<unsigned char>(i, j);
+            }
+
+        }
+    }
+    for (int i = 0; i < w; i++) {
+        delete intImg[i];
+    }
+    delete intImg;
+}

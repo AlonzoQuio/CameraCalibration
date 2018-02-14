@@ -18,10 +18,12 @@ int main( int argc, char** argv ) {
     int n_frame = 1;
     int detected_points = 0;
     int success_frames = 0;
+    Mat img;
+    vector<PatterPoint> pattern_points;
 
     //VideoCapture cap(LIFE_CAM);
-    VideoCapture cap(KINECT_V2);
-    //VideoCapture cap(PS3_EYE_CAM);
+    //VideoCapture cap(KINECT_V2);
+    VideoCapture cap(PS3_EYE_CAM);
     //VideoCapture cap(REAL_SENSE);
 
     if ( !cap.isOpened() ) {
@@ -66,8 +68,6 @@ int main( int argc, char** argv ) {
     namedWindow(window_name, WINDOW_NORMAL);
     resizeWindow(window_name, 640, 480);
     moveWindow(window_name, 640 * 2, 540);
-    Mat img;
-    vector<Point2f> pattern_points;
 
     while (1) {
         if (!cap.read(frame)) {
@@ -94,15 +94,24 @@ int main( int argc, char** argv ) {
         // imshow( "Equalized", frame );
 
         //clean_other_colors(src, w, h);
-        rgb_to_gray(frame, w, h);
+        //rgb_to_gray(frame, w, h);
 
         //segmentar(frame, frame, w, h);
-        Mat thresh;
-        cvtColor( frame, frame_gray, CV_BGR2GRAY );
-        adaptiveThreshold(frame_gray, thresh, 125, ADAPTIVE_THRESH_MEAN_C, THRESH_BINARY, 41, 12);
+        //Mat thresh;
+        //cvtColor( frame, frame_gray, CV_BGR2GRAY );
+        //adaptiveThreshold(frame_gray, thresh, 125, ADAPTIVE_THRESH_MEAN_C, THRESH_BINARY, 41, 12);
         //imshow("Threshold", frame);
-        imshow("Threshold", thresh);
-        frame_gray = thresh;
+        //imshow("Threshold", thresh);
+        //frame_gray = thresh;
+
+        Mat thresh;
+
+        cvtColor( frame, frame_gray, CV_BGR2GRAY );        
+        adaptiveThreshold(frame_gray, thresh, 125, ADAPTIVE_THRESH_MEAN_C, THRESH_BINARY, 41, 12);
+
+
+        segmentar_bn(frame_gray, frame_gray, thresh, w, h);
+        imshow("Threshold", frame_gray);
 
         //clean_using_mask(frame,w,h,mask_points);
 
@@ -116,9 +125,9 @@ int main( int argc, char** argv ) {
         imshow("Elipses", masked);
         imshow("Result", original );
 
-        //if (n_frame == 410) {
-        //    wait_key = 0;
-        //}
+        if (n_frame == 120) {
+            wait_key = 0;
+        }
         if (detected_points == 20) {
             success_frames ++;
         }
