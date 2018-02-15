@@ -20,6 +20,8 @@ You need to have opencv intalled on your system, it can be achived using the fol
 sudo apt-get install libopencv-dev
 ```
 
+## Tests
+[![Tests](https://img.youtube.com/vi/gK19Vt7svGA/0.jpg)](http://www.youtube.com/watch?v=gK19Vt7svGA)
 ## Authors
 
 * **Raúl Romaní** - *Master student at UCSP*

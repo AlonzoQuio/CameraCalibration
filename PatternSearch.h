@@ -42,7 +42,7 @@ int mode_from_father(vector<PatterPoint> pattern_points);
 int find_pattern_points(Mat &src_gray, Mat &masked, Mat&original, int w, int h, Point mask_point[][4], vector<PatterPoint> &pattern_points, int &keep_per_frames);
 float angle_between_two_points(PatterPoint p1, PatterPoint p2);
 float distance_to_rect(PatterPoint p1, PatterPoint p2, PatterPoint x);
-vector<PatterPoint> more_distante_points(vector<PatterPoint>points);
+vector<PatterPoint> more_distant_points(vector<PatterPoint>points);
 
 /**
  * @details Function to support PatterPoint sort by hierarchy
@@ -107,6 +107,12 @@ int find_pattern_points(Mat &src_gray, Mat &masked, Mat&original, int w, int h, 
     float radio;
     float radio_prom = 0;
     float distance;
+    Scalar purple(255, 0, 255);
+    Scalar red(0, 0, 255);
+    Scalar yellow(0, 255, 255);
+    Scalar blue(255, 0, 0);
+    Scalar green(0, 255, 0);
+    Scalar white(255, 255, 255);
 
     int erosion_size = 2;
     Mat kernel = getStructuringElement( MORPH_ELLIPSE,
@@ -119,6 +125,7 @@ int find_pattern_points(Mat &src_gray, Mat &masked, Mat&original, int w, int h, 
 
     findContours( src_gray, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
 
+    /* Find ellipses with a father and a son*/
     for (int c = 0; c < contours.size(); c++) {
         if (contours[c].size() > 4 && hierarchy[c][3] != -1) {
             RotatedRect elipse  = fitEllipse( Mat(contours[c]) );
@@ -128,19 +135,21 @@ int find_pattern_points(Mat &src_gray, Mat &masked, Mat&original, int w, int h, 
                 if (contours[hijo].size() > 4 ) {
                     RotatedRect elipseHijo  = fitEllipse( Mat(contours[hijo]) );
                     radio_hijo = (elipseHijo.size.height + elipseHijo.size.width) / 4;
+                    /* Check center proximity */
                     if ( /*radio <= radio_hijo * 2 &&*/ cv::norm(elipse.center - elipseHijo.center) < radio_hijo / 2) {
                         ellipses_temp.push_back(PatterPoint(elipse.center.x, elipse.center.y, radio, hierarchy[c][3]));
-                        ellipse(masked, elipse, Scalar(0, 255, 255), 2);
+                        ellipse(masked, elipseHijo, red, 2);
+                        ellipse(masked, elipse, yellow, 2);
                     }
                 }
             } else {
-                ellipse(masked, elipse, Scalar(255, 0, 255), 2);
+                ellipse(masked, elipse, purple, 2);
             }
         }
-        drawContours( src_gray, contours, c, Scalar(255, 255, 255), 2, 8, hierarchy, 0, Point() );
+        drawContours( src_gray, contours, c, white, 2, 8, hierarchy, 0, Point() );
     }
 
-    /**/
+    /* Filter ellipses how doesnt have another ones near to it */
     int count;
     for (int i = 0; i < ellipses_temp.size(); ++i) {
         count = 0;
@@ -150,7 +159,7 @@ int find_pattern_points(Mat &src_gray, Mat &masked, Mat&original, int w, int h, 
 
             distance = ellipses_temp[i].distance(ellipses_temp[j]);
             if (distance < radio * 5/*3.5*/) {
-                line(masked, ellipses_temp[i].center(), ellipses_temp[j].center(), Scalar(0, 0, 255), 2);
+                line(masked, ellipses_temp[i].center(), ellipses_temp[j].center(), red, 1);
                 count++;
             }
         }
@@ -158,27 +167,30 @@ int find_pattern_points(Mat &src_gray, Mat &masked, Mat&original, int w, int h, 
             radio = ellipses_temp[i].radio;
             radio_prom += radio;
             new_pattern_points.push_back(ellipses_temp[i]);
-            //circle(masked, ellipses_temp[i].center(), radio, Scalar(0, 255, 0), 5);
+            circle(masked, ellipses_temp[i].center(), radio, blue, 5);
         }
     }
     radio_prom /= new_pattern_points.size();
 
+    /* Clean false positive checking the father hierarchy */
     if (new_pattern_points.size() > 20) {
         int mode = mode_from_father(new_pattern_points);
         if (mode != -1) {
             RotatedRect elipse  = fitEllipse( Mat(contours[mode]) );
-            ellipse(masked, elipse, Scalar(0, 0, 255), 5);
+            ellipse(masked, elipse, white, 5);
 
             /* CLEAN USING MODE */
             vector<PatterPoint> temp ;
             for (int e = 0; e < new_pattern_points.size(); e++) {
                 if (new_pattern_points[e].h_father == mode) {
                     temp.push_back(new_pattern_points[e]);
-                    circle(masked, new_pattern_points[e].center(), new_pattern_points[e].radio, Scalar(0, 255, 0), 5);
                 }
             }
             new_pattern_points = temp;
         }
+    }
+    for (int e = 0; e < new_pattern_points.size(); e++) {
+        circle(masked, new_pattern_points[e].center(), new_pattern_points[e].radio, green, 5);
     }
 
     if (new_pattern_points.size() == 20) {
@@ -209,12 +221,12 @@ float distance_to_rect(PatterPoint p1, PatterPoint p2, PatterPoint x) {
 }
 
 /**
- * @details Calc the most distante points in a vector of points
+ * @details Calc the most distant points in a vector of points
  *
  * @param points Poinst to be evaluate
- * @return Most distante points order by x coordinate
+ * @return Most distant points order by x coordinate
  */
-vector<PatterPoint> more_distante_points(vector<PatterPoint> points) {
+vector<PatterPoint> more_distant_points(vector<PatterPoint> points) {
     float distance = 0;
     double temp;
     int p1, p2;
@@ -278,7 +290,7 @@ void draw_lines_pattern_from_ellipses(Mat &drawing, vector<PatterPoint> pattern_
                 }
 
                 if (coincidendes >= 5) {
-                    line_points = more_distante_points(line_points);
+                    line_points = more_distant_points(line_points);
                     bool found = false;
                     for (int l = 0; l < limit_points.size(); l++) {
                         if (limit_points[l].x == line_points[0].x && limit_points[l].y == line_points[0].y) {
