@@ -87,11 +87,11 @@ int find_points(Mat &src_gray, Mat &masked, Mat&original, int w, int h, Point ma
 
     //erode( src_gray, src_gray, kernel );
 
-    morphologyEx(src_gray, src_gray, MORPH_CLOSE, kernel);
+    //morphologyEx(src_gray, src_gray, MORPH_CLOSE, kernel);
 
     /// Find contours // last was threshold_output
     findContours( src_gray, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
-
+    //imshow("Glu",src_gray);
     vector<PatterPoint>    ellipses_temp;
     vector<PatterPoint> new_pattern_points;
     float radio_hijo = 0;
@@ -115,10 +115,13 @@ int find_points(Mat &src_gray, Mat &masked, Mat&original, int w, int h, Point ma
                         //cout << "Accepted with " << radio_padre << "  " << radio_hijo << "  " << radio_hijo * 2 << endl;
                         //cout << "Hierarchy " << hierarchy[contour][0] << " " << hierarchy[contour][1] << " " << hierarchy[contour][2] << " " << hierarchy[contour][3] << " " << endl;
                         ellipses_temp.push_back(PatterPoint(elipse.center.x, elipse.center.y, radio, hierarchy[contour][3]));
+            ellipse(masked, elipse, Scalar(0, 255, 255), 2);
+
                     }
                 }
             }
         }
+        drawContours( src_gray, contours, contour, Scalar(255,255,255), 2, 8, hierarchy, 0, Point() );
     }
 
     /**/
@@ -131,8 +134,8 @@ int find_points(Mat &src_gray, Mat &masked, Mat&original, int w, int h, Point ma
             radio = ellipses_temp[j].radio;//(ellipses_temp[j].size.height + ellipses_temp[j].size.width) / 4;
 
             float distance = ellipses_temp[i].distance(ellipses_temp[j]);
-            if (distance < radio * 3.5) {
-                line(masked, ellipses_temp[i].center(), ellipses_temp[j].center(), Scalar(0, 0, 255), 5);
+            if (distance < radio * 5/*3.5*/) {
+                line(masked, ellipses_temp[i].center(), ellipses_temp[j].center(), Scalar(0, 0, 255), 2);
                 count++;
             } else {
                 //if (distance < radio * 4) {
@@ -238,7 +241,7 @@ int find_points(Mat &src_gray, Mat &masked, Mat&original, int w, int h, Point ma
                     lineType );*/
             pattern_points.push_back(new_pattern_points[i]);
         }
-        keep_per_frames = 2;
+        keep_per_frames = 3;
         //drawChessboardCorners( original, Size(4,5), Mat(pattern_points),true );
     }
 

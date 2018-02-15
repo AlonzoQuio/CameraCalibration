@@ -11,8 +11,10 @@ using namespace std;
 #define REAL_SENSE "/home/alonzo/Documentos/Projects/CameraCalibration_2/video/calibration_realsense.avi"
 
 int main( int argc, char** argv ) {
+    long double execTime, prevCount, time;
+    execTime = prevCount = time = 0;
     Mat original, frame, frame_gray, masked;
-    int wait_key = 10;
+    int wait_key = 5;
     int keep_per_frames = 2;
     Point mask_points[1][4];
     int n_frame = 1;
@@ -20,10 +22,11 @@ int main( int argc, char** argv ) {
     int success_frames = 0;
     Mat img;
     vector<PatterPoint> pattern_points;
-
+    
+    VideoCapture cap(0);
     //VideoCapture cap(LIFE_CAM);
     //VideoCapture cap(KINECT_V2);
-    VideoCapture cap(PS3_EYE_CAM);
+    //VideoCapture cap(PS3_EYE_CAM);
     //VideoCapture cap(REAL_SENSE);
 
     if ( !cap.isOpened() ) {
@@ -44,17 +47,17 @@ int main( int argc, char** argv ) {
     resizeWindow(window_name, 640, 480);
     moveWindow(window_name, 0, 0);
 
-    window_name = "Equalized";
+    window_name = "Masked";
     namedWindow(window_name, WINDOW_NORMAL);
     resizeWindow(window_name, 640, 480);
     moveWindow(window_name, 640, 0);
 
-    window_name = "Masked";
+    window_name = "Threshold";
     namedWindow(window_name, WINDOW_NORMAL);
     resizeWindow(window_name, 640, 480);
     moveWindow(window_name, 640 * 2, 0);
 
-    window_name = "Threshold";
+    window_name = "Contours";
     namedWindow(window_name, WINDOW_NORMAL);
     resizeWindow(window_name, 640, 480);
     moveWindow(window_name, 0, 540);
@@ -70,10 +73,12 @@ int main( int argc, char** argv ) {
     moveWindow(window_name, 640 * 2, 540);
 
     while (1) {
+
         if (!cap.read(frame)) {
             cout << "\n Cannot read the video file. \n";
             break;
         }
+        prevCount = getTickCount() * 1.0000;
         original = frame.clone();
         imshow("Original", original);
 
@@ -83,56 +88,46 @@ int main( int argc, char** argv ) {
         frame = img;
 
         //equalizar_histograma(frame, w, h);
-        frame = equalizeIntensity(frame);
-        imshow("Equalized", frame);
+        //frame = equalizeIntensity(frame);
+        //imshow("Equalized", frame);
 
         clean_using_mask(frame, w, h, mask_points);
         imshow("Masked", frame);
         masked = frame.clone();
 
 
-        // imshow( "Equalized", frame );
-
-        //clean_other_colors(src, w, h);
-        //rgb_to_gray(frame, w, h);
-
-        //segmentar(frame, frame, w, h);
-        //Mat thresh;
-        //cvtColor( frame, frame_gray, CV_BGR2GRAY );
-        //adaptiveThreshold(frame_gray, thresh, 125, ADAPTIVE_THRESH_MEAN_C, THRESH_BINARY, 41, 12);
-        //imshow("Threshold", frame);
-        //imshow("Threshold", thresh);
-        //frame_gray = thresh;
-
         Mat thresh;
 
         cvtColor( frame, frame_gray, CV_BGR2GRAY );        
-        adaptiveThreshold(frame_gray, thresh, 125, ADAPTIVE_THRESH_MEAN_C, THRESH_BINARY, 41, 12);
-
+        
+        //adaptiveThreshold(frame_gray, thresh, 125, ADAPTIVE_THRESH_MEAN_C, THRESH_BINARY, 41, 12);
+        adaptiveThreshold(frame_gray, thresh, 255, ADAPTIVE_THRESH_GAUSSIAN_C, THRESH_BINARY, 41, 12);
 
         segmentar_bn(frame_gray, frame_gray, thresh, w, h);
         imshow("Threshold", frame_gray);
 
-        //clean_using_mask(frame,w,h,mask_points);
-
-        /// Convert image to gray and blur it
-        //cvtColor( frame, frame_gray, CV_BGR2GRAY );
-        //blur( src_gray, src_gray, Size(3, 3) );
-        //GaussianBlur( frame_gray, frame_gray, Size( 3, 3 ), 0, 0 );
-
         detected_points = find_points(frame_gray, masked, original, w, h, mask_points, pattern_points, keep_per_frames);
 
         imshow("Elipses", masked);
-        imshow("Result", original );
 
-        if (n_frame == 120) {
-            wait_key = 0;
-        }
+        imshow("Contours", frame_gray);
+
+        //if (n_frame == 264) {
+        //    wait_key = 0;
+        //}
         if (detected_points == 20) {
             success_frames ++;
         }
-        cout << "Success " <<  success_frames << "/" << n_frame++ << endl;
+        std::ostringstream str;
+        str << "Success rate " << success_frames << "/" << n_frame++;
+        cout << str.str() << endl;
+        putText(original, str.str(), cvPoint(20,20), FONT_HERSHEY_COMPLEX_SMALL, 0.8, cvScalar(0,255,0), 1, CV_AA);
 
+        imshow("Result", original );
+        
+        time += execTime;
+        cout << "execTime = " << execTime << "; time = " << time << endl;
+        execTime = (getTickCount()*1.0000 - prevCount) / (getTickFrequency() * 1.0000);
         char t = (char)waitKey(wait_key);
         if ( t == 27)
             break;
