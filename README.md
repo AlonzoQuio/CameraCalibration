@@ -21,8 +21,10 @@ sudo apt-get install libopencv-dev
 ```
 
 ## Tests
+Realtime test using PS3 camera
 [![Realtime test using PS3 camera](https://img.youtube.com/vi/fiKpNXRzBqk/0.jpg)](http://www.youtube.com/watch?v=fiKpNXRzBqk)
 
+Realtime test using MS Life cam camera
 [![Realtime test using MS Life cam camera](https://img.youtube.com/vi/Mj2aXRs_yH8/0.jpg)](http://www.youtube.com/watch?v=Mj2aXRs_yH8)
 ## Authors
 
