@@ -48,23 +48,30 @@ int mode_from_father(vector<PatterPoint> pattern_points) {
     }
     sort(temp.begin(), temp.end(), sort_patter_point_by_father);
 
-    int mode_elem = temp[0].h_father;
-    int mode_count = 0;
-    int temp_count = 0;
-    for (int p = 0; p < temp.size(); p++) {
-        if (mode_elem == temp[p].h_father) {
-            temp_count++;
+    int number = temp[0].h_father;
+    int mode = number;
+    int count = 1;
+    int countMode = 1;
+
+    for (int p = 1; p < temp.size(); p++) {
+        if (number == temp[p].h_father) {
+            count++;
         } else {
-            if (temp_count > mode_count) {
-                mode_count = temp_count;
-                temp_count = 0;
-                mode_elem = temp[p].h_father;
+            if (count > countMode) {
+                countMode = count;
+                mode = number;
             }
+            count = 1;
+            number =  temp[p].h_father;
         }
     }
-    return mode_elem;
-}
+    if (count > countMode) {
+        return number;
+    } else {
+        return mode;
+    }
 
+}
 
 float average(vector<float> data) {
     float sum = 0;
@@ -115,13 +122,12 @@ int find_points(Mat &src_gray, Mat &masked, Mat&original, int w, int h, Point ma
                         //cout << "Accepted with " << radio_padre << "  " << radio_hijo << "  " << radio_hijo * 2 << endl;
                         //cout << "Hierarchy " << hierarchy[contour][0] << " " << hierarchy[contour][1] << " " << hierarchy[contour][2] << " " << hierarchy[contour][3] << " " << endl;
                         ellipses_temp.push_back(PatterPoint(elipse.center.x, elipse.center.y, radio, hierarchy[contour][3]));
-            ellipse(masked, elipse, Scalar(0, 255, 255), 2);
-
+                        ellipse(masked, elipse, Scalar(0, 255, 255), 2);
                     }
                 }
             }
         }
-        drawContours( src_gray, contours, contour, Scalar(255,255,255), 2, 8, hierarchy, 0, Point() );
+        drawContours( src_gray, contours, contour, Scalar(255, 255, 255), 2, 8, hierarchy, 0, Point() );
     }
 
     /**/
@@ -166,7 +172,7 @@ int find_points(Mat &src_gray, Mat &masked, Mat&original, int w, int h, Point ma
     /* CLEAN USING MODE */
     vector<PatterPoint> temp ;
     for (int e = 0; e < new_pattern_points.size(); ++e) {
-        if(new_pattern_points[e].h_father == mode){
+        if (new_pattern_points[e].h_father == mode) {
             temp.push_back(new_pattern_points[e]);
             circle(masked, new_pattern_points[e].center(), new_pattern_points[e].radio, Scalar(0, 255, 0), 5);
         }
@@ -241,7 +247,7 @@ int find_points(Mat &src_gray, Mat &masked, Mat&original, int w, int h, Point ma
                     lineType );*/
             pattern_points.push_back(new_pattern_points[i]);
         }
-        keep_per_frames = 3;
+        keep_per_frames = 2;
         //drawChessboardCorners( original, Size(4,5), Mat(pattern_points),true );
     }
 

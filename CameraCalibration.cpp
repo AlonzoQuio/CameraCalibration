@@ -11,10 +11,10 @@ using namespace std;
 #define REAL_SENSE "/home/alonzo/Documentos/Projects/CameraCalibration_2/video/calibration_realsense.avi"
 
 int main( int argc, char** argv ) {
-    long double execTime, prevCount, time;
-    execTime = prevCount = time = 0;
+    //long double execTime, prevCount, time;
+    //execTime = prevCount = time = 0;
     Mat original, frame, frame_gray, masked;
-    int wait_key = 5;
+    int wait_key = 10;
     int keep_per_frames = 2;
     Point mask_points[1][4];
     int n_frame = 1;
@@ -23,9 +23,9 @@ int main( int argc, char** argv ) {
     Mat img;
     vector<PatterPoint> pattern_points;
     
-    VideoCapture cap(0);
+    //VideoCapture cap(0);
     //VideoCapture cap(LIFE_CAM);
-    //VideoCapture cap(KINECT_V2);
+    VideoCapture cap(KINECT_V2);
     //VideoCapture cap(PS3_EYE_CAM);
     //VideoCapture cap(REAL_SENSE);
 
@@ -78,7 +78,7 @@ int main( int argc, char** argv ) {
             cout << "\n Cannot read the video file. \n";
             break;
         }
-        prevCount = getTickCount() * 1.0000;
+        //prevCount = getTickCount() * 1.0000;
         original = frame.clone();
         imshow("Original", original);
 
@@ -121,13 +121,14 @@ int main( int argc, char** argv ) {
         std::ostringstream str;
         str << "Success rate " << success_frames << "/" << n_frame++;
         cout << str.str() << endl;
-        putText(original, str.str(), cvPoint(20,20), FONT_HERSHEY_COMPLEX_SMALL, 0.8, cvScalar(0,255,0), 1, CV_AA);
+        //putText(original, str.str(), cvPoint(30,30), FONT_HERSHEY_COMPLEX_SMALL, 2, cvScalar(0,255,0), 1, CV_AA);
 
         imshow("Result", original );
         
-        time += execTime;
-        cout << "execTime = " << execTime << "; time = " << time << endl;
-        execTime = (getTickCount()*1.0000 - prevCount) / (getTickFrequency() * 1.0000);
+        //time += execTime;
+        //cout << "execTime = " << execTime << "; time = " << time << endl;
+        //execTime = (getTickCount()*1.0000 - prevCount) / (getTickFrequency() * 1.0000);
+        
         char t = (char)waitKey(wait_key);
         if ( t == 27)
             break;
