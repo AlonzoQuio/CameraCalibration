@@ -6,7 +6,8 @@ using namespace cv;
 using namespace std;
 
 //#define LIFE_CAM "/home/alonzo/Documentos/Projects/CameraCalibration_2/video/calibration_mslifecam.avi"
-#define KINECT_V2 "/home/alonzo/Documentos/Projects/CameraCalibration_2/video/calibration_kinectv2.avi"
+//#define KINECT_V2 "/home/alonzo/Documentos/Projects/CameraCalibration_2/video/calibration_kinectv2.avi"
+#define KINECT_V2 "/home/alonzo/Documentos/Projects/CameraCalibration_2/video/calibration_kinectv2_litte.mp4"
 //#define PS3_EYE_CAM "/home/alonzo/Documentos/Projects/CameraCalibration_2/video/calibration_ps3eyecam.avi"
 #define REAL_SENSE "/home/alonzo/Documentos/Projects/CameraCalibration_2/video/calibration_realsense.avi"
 
@@ -14,23 +15,26 @@ using namespace std;
 #define PS3_EYE_CAM "calibration_videos/calibration_ps3eyecam.avi"
 
 int main( int argc, char** argv ) {
-    //long double execTime, prevCount, time;
-    //execTime = prevCount = time = 0;
+    long double execTime, prevCount, time;
+    execTime = prevCount = time = 0;
     Mat original, frame, frame_gray, masked;
-    int wait_key = 10;
+    Mat m_success_rate, m_fps;
+    int wait_key = 1;
+    int original_wait_key = wait_key;
     int keep_per_frames = 2;
     Point mask_points[1][4];
     int n_frame = 1;
     int detected_points = 0;
     int success_frames = 0;
     Mat img;
+    int total_frames;
     vector<PatterPoint> pattern_points;
 
     /* For video from webcam */
     //VideoCapture cap(0);
-    VideoCapture cap(LIFE_CAM);
+    //VideoCapture cap(LIFE_CAM);
     //VideoCapture cap(KINECT_V2);
-    //VideoCapture cap(PS3_EYE_CAM);
+    VideoCapture cap(PS3_EYE_CAM);
     //VideoCapture cap(REAL_SENSE);
 
     if ( !cap.isOpened() ) {
@@ -39,6 +43,7 @@ int main( int argc, char** argv ) {
     }
 
     cap.read(frame);
+    total_frames= cap.get(CAP_PROP_FRAME_COUNT);
     double fps = cap.get(CV_CAP_PROP_FPS);
     int w = frame.rows;
     int h = frame.cols;
@@ -48,6 +53,8 @@ int main( int argc, char** argv ) {
     mask_points[0][3]  = Point(0, w);
     int window_w = 360 * 1.25;
     int window_h = 240 * 1.25;
+    //int window_w = 640;
+    //int window_h = 480;
     int second_screen_offste = 0;
 
     /* WINDOW SETUP */
@@ -81,14 +88,18 @@ int main( int argc, char** argv ) {
     resizeWindow(window_name, window_w, window_h);
     moveWindow(window_name, window_w * 2 + second_screen_offste, window_h + 40);
 
-    
+    /*window_name = "Rate";
+    namedWindow(window_name, WINDOW_NORMAL);
+    resizeWindow(window_name, window_w*3, 10);
+    moveWindow(window_name, 0 + second_screen_offste, window_h*2 + 40);*/
+
     while (1) {
 
+        prevCount = getTickCount() * 1.0000;
         if (!cap.read(frame)) {
             cout << "\n Cannot read the video file. \n";
             break;
         }
-        //prevCount = getTickCount() * 1.0000;
         original = frame.clone();
         imshow("Original", original);
 
@@ -113,26 +124,34 @@ int main( int argc, char** argv ) {
         //if (n_frame == 264) {
         //    wait_key = 0;
         //}
+        time += execTime;
+
         if (detected_points == 20) {
             success_frames ++;
         }
-        std::ostringstream str;
-        str << "Success rate " << success_frames << "/" << n_frame++;
-        cout << str.str() << endl;
-        //putText(original, str.str(), cvPoint(30,30), FONT_HERSHEY_COMPLEX_SMALL, 2, cvScalar(0,255,0), 1, CV_AA);
 
         imshow("Result", original );
 
-        //time += execTime;
-        //cout << "execTime = " << execTime << "; time = " << time << endl;
-        //execTime = (getTickCount()*1.0000 - prevCount) / (getTickFrequency() * 1.0000);
+        n_frame++;
+        std::ostringstream fps, success_rate;
+        fps << "FPS: " << 1 / execTime ;
+        success_rate << "Success rate: " << success_frames << " / " << n_frame <<  " = " << success_frames * 100.0 / n_frame  << "%";
+        m_success_rate = Mat::zeros(Size(window_w * 3, 40), CV_8UC3);
+        putText(m_success_rate, fps.str(), cvPoint(window_w * 3 - 250, 30), FONT_HERSHEY_PLAIN, 2, cvScalar(0, 255, 0), 1, CV_AA);
+        putText(m_success_rate, success_rate.str(), cvPoint(10, 30), FONT_HERSHEY_PLAIN, 2, cvScalar(0, 255, 0), 1, CV_AA);
+        imshow("Rate", m_success_rate);
 
+        execTime = (getTickCount() * 1.0000 - prevCount) / (getTickFrequency() * 1.0000);
+        if(total_frames==n_frame){
+            cout << success_rate.str() << endl;
+            cout << fps.str() << endl;
+        }
         char t = (char)waitKey(wait_key);
         if ( t == 27)
             break;
         if (t == ' ') {
             if (wait_key == 0) {
-                wait_key = 0;
+                wait_key = original_wait_key;
             } else {
                 wait_key = 0;
             }

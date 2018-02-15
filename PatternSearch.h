@@ -119,7 +119,7 @@ int find_pattern_points(Mat &src_gray, Mat &masked, Mat&original, int w, int h, 
                                         Size( 2 * erosion_size + 1, 2 * erosion_size + 1 ),
                                         Point( erosion_size, erosion_size ) );
 
-    erode( src_gray, src_gray, kernel );
+    //erode( src_gray, src_gray, kernel );
 
     //morphologyEx(src_gray, src_gray, MORPH_CLOSE, kernel);
 
