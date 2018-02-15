@@ -17,7 +17,7 @@ int main( int argc, char** argv ) {
     //long double execTime, prevCount, time;
     //execTime = prevCount = time = 0;
     Mat original, frame, frame_gray, masked;
-    int wait_key = 0;
+    int wait_key = 10;
     int keep_per_frames = 2;
     Point mask_points[1][4];
     int n_frame = 1;
@@ -26,6 +26,7 @@ int main( int argc, char** argv ) {
     Mat img;
     vector<PatterPoint> pattern_points;
 
+    /* For video from webcam */
     //VideoCapture cap(0);
     VideoCapture cap(LIFE_CAM);
     //VideoCapture cap(KINECT_V2);
@@ -47,7 +48,7 @@ int main( int argc, char** argv ) {
     mask_points[0][3]  = Point(0, w);
     int window_w = 360 * 1.25;
     int window_h = 240 * 1.25;
-    int second_screen_offste = 1360;
+    int second_screen_offste = 0;
 
     /* WINDOW SETUP */
     string window_name = "Original";
