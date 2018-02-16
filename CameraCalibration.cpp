@@ -19,7 +19,7 @@ int main( int argc, char** argv ) {
     execTime = prevCount = time = 0;
     Mat original, frame, frame_gray, masked;
     Mat m_success_rate, m_fps;
-    int wait_key = 0;
+    int wait_key = 1;
     int original_wait_key = wait_key;
     int keep_per_frames = 2;
     Point mask_points[1][4];
@@ -32,6 +32,28 @@ int main( int argc, char** argv ) {
 
     /* For video from webcam */
     //VideoCapture cap(0);
+
+    //cap.set(cv::CAP_PROP_FPS,60);
+    //int fps = cap.get(cv::CAP_PROP_FPS);
+    //cout<<fps<<endl;
+
+    //cap.set(cv::CAP_PROP_BRIGHTNESS,-1);
+    //float brillo = cap.get(cv::CAP_PROP_BRIGHTNESS);
+    //cout<<"brillo" <<brillo<<endl;
+
+    //cap.set(cv::CAP_PROP_AUTOFOCUS,0);
+    //int autofoco = cap.get(cv::CAP_PROP_AUTOFOCUS);
+    //cout<<"auto"<<autofoco<<endl;
+
+    //cap.set(cv::CAP_PROP_WHITE_BALANCE_BLUE_U,0);
+    //float whiteBalanceBlue = cap.get(cv::CAP_PROP_WHITE_BALANCE_BLUE_U);
+    //cout<<whiteBalanceBlue<<endl;
+
+    //cap.set(cv::CAP_PROP_WHITE_BALANCE_RED_V,26);
+    //float whiteBalanceRed = cap.get(cv::CAP_PROP_WHITE_BALANCE_RED_V);
+    //cout<<whiteBalanceRed<<endl;
+
+
     //VideoCapture cap(LIFE_CAM);
     //VideoCapture cap(KINECT_V2);
     VideoCapture cap(PS3_EYE_CAM);
@@ -43,42 +65,42 @@ int main( int argc, char** argv ) {
     }
 
     cap.read(frame);
-    total_frames = cap.get(CAP_PROP_FRAME_COUNT);
-    double fps = cap.get(CV_CAP_PROP_FPS);
+    //total_frames = cap.get(CAP_PROP_FRAME_COUNT);
+    //double fps = cap.get(CV_CAP_PROP_FPS);
     int w = frame.rows;
     int h = frame.cols;
     mask_points[0][0]  = Point(0, 0);
     mask_points[0][1]  = Point(h, 0);
     mask_points[0][2]  = Point(h, w);
     mask_points[0][3]  = Point(0, w);
-    int window_w = 360 * 1.25;
-    int window_h = 240 * 1.25;
-    //int window_w = 640;
-    //int window_h = 480;
+    //int window_w = 360 * 1.25;
+    //int window_h = 240 * 1.25;
+    int window_w = 640;
+    int window_h = 480;
     int second_screen_offste = 0;
     string window_name;
-    
+
     /* WINDOW SETUP */
     window_name = "Original";
     namedWindow(window_name, WINDOW_NORMAL);
     resizeWindow(window_name, window_w, window_h);
     moveWindow(window_name, 0 + second_screen_offste, 0);
-    
+
     window_name = "Masked";
     namedWindow(window_name, WINDOW_NORMAL);
     resizeWindow(window_name, window_w, window_h);
     moveWindow(window_name, window_w + second_screen_offste, 0);
-    
+
     window_name = "Threshold";
     namedWindow(window_name, WINDOW_NORMAL);
     resizeWindow(window_name, window_w, window_h);
     moveWindow(window_name, window_w * 2 + second_screen_offste, 0);
-    
+
     window_name = "Contours";
     namedWindow(window_name, WINDOW_NORMAL);
     resizeWindow(window_name, window_w, window_h);
     moveWindow(window_name, 0 + second_screen_offste, window_h + 40);
-    
+
     window_name = "Elipses";
     namedWindow(window_name, WINDOW_NORMAL);
     resizeWindow(window_name, window_w, window_h);
@@ -97,7 +119,7 @@ int main( int argc, char** argv ) {
     //moveWindow(window_name, 0 + second_screen_offste, window_h*2 + 40);
 
     while (1) {
-
+        //cap.set(1, n_frame);
         prevCount = getTickCount() * 1.0000;
         if (!cap.read(frame)) {
             cout << "\n Cannot read the video file. \n";
@@ -115,7 +137,7 @@ int main( int argc, char** argv ) {
         cvtColor( frame, frame_gray, CV_BGR2GRAY );
         //adaptiveThreshold(frame_gray, thresh, 125, ADAPTIVE_THRESH_MEAN_C, THRESH_BINARY, 41, 12);
         adaptiveThreshold(frame_gray, thresh, 255, ADAPTIVE_THRESH_GAUSSIAN_C, THRESH_BINARY, 41, 12);
-
+        //imshow("OpencvThresh", thresh);
         segmentar(frame_gray, frame_gray, thresh, w, h);
         imshow("Threshold", frame_gray);
 
@@ -124,7 +146,7 @@ int main( int argc, char** argv ) {
         imshow("Contours", frame_gray);
         imshow("Elipses", masked);
 
-        //if (n_frame == 264) {
+        //if (n_frame == 1170) {
         //    wait_key = 0;
         //}
         time += execTime;
@@ -137,28 +159,34 @@ int main( int argc, char** argv ) {
 
         n_frame++;
         std::ostringstream fps, success_rate;
-        fps << "FPS: " << 1 / execTime ;
-        success_rate << "Success rate: " << success_frames << " / " << n_frame <<  " = " << success_frames * 100.0 / n_frame  << "%";
+        fps << execTime * 1000 << "ms" ;
+        execTime = (getTickCount() * 1.0000 - prevCount) / (getTickFrequency() * 1.0000);
+        success_rate << "Success rate: " << success_frames << " / " << n_frame <<  " = " << success_frames * 100.0 / n_frame ;// << "% with " << time/(n_frame-1) * 1000.0;
         m_success_rate = Mat::zeros(Size(window_w * 3, 40), CV_8UC3);
         putText(m_success_rate, fps.str(), cvPoint(window_w * 3 - 250, 30), FONT_HERSHEY_PLAIN, 2, cvScalar(0, 255, 0), 1, CV_AA);
         putText(m_success_rate, success_rate.str(), cvPoint(10, 30), FONT_HERSHEY_PLAIN, 2, cvScalar(0, 255, 0), 1, CV_AA);
         imshow("Rate", m_success_rate);
 
-        execTime = (getTickCount() * 1.0000 - prevCount) / (getTickFrequency() * 1.0000);
-        if (total_frames == n_frame) {
-            cout << success_rate.str() << endl;
-            cout << fps.str() << endl;
-        }
+        //if (total_frames == n_frame) {
+        //    cout << success_rate.str() << endl;
+        //    cout << fps.str() << endl;
+        //}
         char t = (char)waitKey(wait_key);
         if ( t == 27)
             break;
-        if (t == ' ') {
-            if (wait_key == 0) {
-                wait_key = original_wait_key;
-            } else {
-                wait_key = 0;
-            }
-        }
+        //if (t == ' ') {
+        //    if (wait_key == 0) {
+        //        wait_key = original_wait_key;
+        //    } else {
+        //        wait_key = 0;
+        //    }
+        //}
+        //if (t == 'a') {
+        //    n_frame--;
+        //}
+        //if (t == 'd') {
+        //    n_frame++;
+        //}
     }
     return 0;
 }

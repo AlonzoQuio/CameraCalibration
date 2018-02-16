@@ -36,7 +36,7 @@ public:
     }
 };
 
-void draw_lines_pattern_from_ellipses(Mat &out, vector<PatterPoint> &pattern_centers, vector<PatterPoint> new_pattern_points);
+void draw_lines_pattern_from_ellipses(Mat &out, vector<PatterPoint> &pattern_centers, vector<PatterPoint> new_pattern_points, float radio_prom);
 void update_mask_from_points(vector<PatterPoint> points, int w, int h, Point mask_point[][4]);
 int mode_from_father(vector<PatterPoint> pattern_points);
 int find_pattern_points(Mat &src_gray, Mat &masked, Mat&original, int w, int h, Point mask_point[][4], vector<PatterPoint> &pattern_points, int &keep_per_frames);
@@ -124,12 +124,41 @@ int find_pattern_points(Mat &src_gray, Mat &masked, Mat&original, int w, int h, 
                                         Size( 2 * erosion_size + 1, 2 * erosion_size + 1 ),
                                         Point( erosion_size, erosion_size ) );
 
+    int lowThreshold = 10;
+    int const max_lowThreshold = 100;
+    int ratio = 3;
+    int kernel_size = 3;
+
+    Mat detected_edges, dst;
+    //blur( src_gray, detected_edges, Size(3, 3) );
+    detected_edges = src_gray.clone();
+    /// Canny detector
+    Canny( detected_edges, detected_edges, lowThreshold, lowThreshold * ratio, kernel_size );
+
+    /// Using Canny's output as a mask, we display our result
+    //dst = Scalar::all(0);
+
+    //src_gray.copyTo( dst, detected_edges);
+    imshow( "Canny result", detected_edges );
+    //src_gray = dst;
+
     //erode( src_gray, src_gray, kernel );
 
     //morphologyEx(src_gray, src_gray, MORPH_CLOSE, kernel);
 
-    findContours( src_gray, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
+    findContours( detected_edges, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
+    Mat masked_2 = masked.clone();
+    for (int c = 0; c < contours.size(); c++) {
+        if (contours[c].size() > 4 && hierarchy[c][3] != -1) {
+            RotatedRect elipse  = fitEllipse( Mat(contours[c]) );
 
+            ellipse(masked_2, elipse, purple, 2);
+        }
+        //drawContours( detected_edges, contours, c, white, 2, 8, hierarchy, 0, Point() );
+    }
+    imshow("Other aproach",masked_2);
+
+    findContours( src_gray, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
     /* Find ellipses with a father and a son*/
     for (int c = 0; c < contours.size(); c++) {
         if (contours[c].size() > 4 && hierarchy[c][3] != -1) {
@@ -198,27 +227,50 @@ int find_pattern_points(Mat &src_gray, Mat &masked, Mat&original, int w, int h, 
             new_pattern_points = temp;
         }
     }
-
-    for (int e = 0; e < new_pattern_points.size(); e++) {
-        circle(masked, new_pattern_points[e].center(), new_pattern_points[e].radio, green, 5);
-    }
+    //for (int e = 0; e < new_pattern_points.size(); e++) {
+    //}
 
     if (new_pattern_points.size() == 20) {
         keep_per_frames = 2;
         //pattern_points = new_pattern_points;
-        draw_lines_pattern_from_ellipses(original, pattern_points, new_pattern_points);
+
+        /* Trakking */
+        //vector<Point2f> points_2f(new_pattern_points.size());
+        //for (int p = 0; p < new_pattern_points.size(); p++) {
+        //    points_2f[p] = Point2f(new_pattern_points[p].x, new_pattern_points[p].y);
+        //    putText(original, to_string(p), points_2f[p]/*cvPoint(10, 30)*/, FONT_HERSHEY_PLAIN, 2, cvScalar(0, 0, 255), 2, CV_AA);
+        //}
+        //RotatedRect boundRect = minAreaRect( Mat(points_2f) );
+        //cout << "BoundRect angle " << boundRect.angle << endl;
+        //Point2f rect_points[4];
+        //boundRect.points( rect_points );
+        //circle(original, rect_points[0], 10, Scalar(0, 255, 255), 10);
+        //line(original, rect_points[0], rect_points[1], Scalar(0, 255, 255));
+        //line(original, rect_points[1], rect_points[2], Scalar(0, 255, 255));
+        //line(original, rect_points[2], rect_points[3], Scalar(0, 255, 255));
+        //line(original, rect_points[3], rect_points[0], Scalar(0, 255, 255));
+        draw_lines_pattern_from_ellipses(original, pattern_points, new_pattern_points, radio_prom);
+        update_mask_from_points(new_pattern_points, w, h, mask_point);
 
     } else {
-        if (keep_per_frames-- > 0) {
+        radio_prom = 0;
+        for (int p = 0; p < pattern_points.size(); p++) {
+            radio_prom += pattern_points[p].radio;
+        }
+        radio_prom /= pattern_points.size();
+        draw_lines_pattern_from_ellipses(original, pattern_points, pattern_points, radio_prom);
+        new_pattern_points.clear();
+        update_mask_from_points(new_pattern_points, w, h, mask_point);
+
+        /*if (keep_per_frames-- > 0) {
             new_pattern_points = pattern_points;
             draw_lines_pattern_from_ellipses(original, pattern_points, new_pattern_points);
         } else {
             new_pattern_points.clear();
             pattern_points.clear();
-        }
+        }*/
     }
 
-    update_mask_from_points(new_pattern_points, w, h, mask_point);
     return new_pattern_points.size();
 }
 
@@ -274,9 +326,12 @@ vector<PatterPoint> more_distant_points(vector<PatterPoint> points) {
  * @param drawing Mat to draw patter
  * @param pattern_centers Patter points found
  */
-void draw_lines_pattern_from_ellipses(Mat &drawing, vector<PatterPoint> &pattern_centers, vector<PatterPoint> new_pattern_points) {
+void draw_lines_pattern_from_ellipses(Mat &drawing, vector<PatterPoint> &pattern_centers, vector<PatterPoint> new_pattern_points, float radio_prom) {
     if (new_pattern_points.size() < 20 && pattern_centers.size() < 20) {
+        //cout << "Not enough points" << endl;
         return;
+    } else {
+        //cout << "Enough points" << endl;
     }
     vector<Scalar> color_palette(5);
     color_palette[0] = Scalar(255, 0, 255);
@@ -288,6 +343,7 @@ void draw_lines_pattern_from_ellipses(Mat &drawing, vector<PatterPoint> &pattern
     int centers = pattern_centers.size();
     float pattern_range = 5;
     float distance;
+    float distance_prom;
     float min_distance;
     int replace_point;
     int line_color = 0;
@@ -295,8 +351,11 @@ void draw_lines_pattern_from_ellipses(Mat &drawing, vector<PatterPoint> &pattern
     vector<PatterPoint> line_points;
     vector<PatterPoint> limit_points;
     if (pattern_centers.size() == 0) {
+        //cout << "Draw lines" << endl;
+        //pattern_centers = new_pattern_points;
         centers = new_pattern_points.size();
         for (int i = 0; i < centers; i++) {
+            putText(drawing, to_string(i), new_pattern_points[i].to_point2f()/*cvPoint(10, 30)*/, FONT_HERSHEY_PLAIN, 2, cvScalar(0, 0, 255), 2, CV_AA);
             for (int j = 0; j < centers; j++) {
                 if (i != j) {
                     temp.clear();
@@ -310,6 +369,7 @@ void draw_lines_pattern_from_ellipses(Mat &drawing, vector<PatterPoint> &pattern
                     }
 
                     if (coincidendes == 5) {
+                        //line_points = more_distant_points(line_points);
                         sort(line_points.begin(), line_points.end(), sort_pattern_point_by_x);
                         if (line_points[4].x - line_points[0].x < line_points[0].radio) {
                             sort(line_points.begin(), line_points.end(), sort_pattern_point_by_y);
@@ -320,14 +380,26 @@ void draw_lines_pattern_from_ellipses(Mat &drawing, vector<PatterPoint> &pattern
                                 found = true;
                             }
                         }
+                        /*bool found = false;
+                        for (int l = 0; l < limit_points.size(); l++) {
+                            if (limit_points[l].x == line_points[0].x && limit_points[l].y == line_points[0].y) {
+                                found = true;
+                            }
+                        }
+                        */
+
                         if (!found) {
                             for (int l = 0; l < line_points.size(); l++) {
                                 pattern_centers.push_back(line_points[l]);
-                                putText(drawing, to_string(pattern_centers.size() - 1), line_points[l].to_point2f()/*cvPoint(10, 30)*/, FONT_HERSHEY_COMPLEX_SMALL, 1, cvScalar(0, 0, 255), 2);
-
                             }
+
                             limit_points.push_back(line_points[0]);
                             limit_points.push_back(line_points[4]);
+                            //if (line_color != 0) {
+                            //    line(drawing, line_points[4].to_point2f(), limit_points[line_color * 2 - 2].to_point2f(), color_palette[line_color], 2);
+                            //}
+                            //line(drawing, line_points[0].to_point2f(), line_points[4].to_point2f(), color_palette[line_color], 2);
+                            //line_color++;
                         }
                     }
                 }
@@ -335,7 +407,7 @@ void draw_lines_pattern_from_ellipses(Mat &drawing, vector<PatterPoint> &pattern
         }
     } else {
         //cout << "Pattern Traking" << endl;
-
+        distance_prom = 0;
         for (int p = 0; p < pattern_centers.size(); p++) {
             replace_point = 0;
             min_distance = 100;
@@ -346,26 +418,22 @@ void draw_lines_pattern_from_ellipses(Mat &drawing, vector<PatterPoint> &pattern
                     replace_point = n;
                 }
             }
-            if (min_distance > pattern_centers[p].radio) {
-                min_distance = -1;
-                break;
-            }
-            //line(drawing, pattern_centers[p].to_point2f(), new_pattern_points[replace_point].to_point2f(), Scalar(0, 255, 255), 1);
-            //pattern_centers[p] = new_pattern_points[replace_point];
-            //putText(drawing, to_string(p), pattern_centers[p].to_point2f()/*cvPoint(10, 30)*/, FONT_HERSHEY_PLAIN, 2, cvScalar(0, 0, 255), 2, CV_AA);
+            //if (min_distance > pattern_centers[p].radio/**1.5*/) {
+            //    min_distance = -1;
+            //    break;
+            //}
+            distance_prom += min_distance;
+
             circle(drawing, pattern_centers[p].to_point2f(), pattern_centers[p].radio/**1.5*/, Scalar(0, 255, 255), 1);
             line(drawing, pattern_centers[p].to_point2f(), new_pattern_points[replace_point].to_point2f(), Scalar(0, 255, 255), 1);
             pattern_centers[p] = new_pattern_points[replace_point];
             putText(drawing, to_string(p), pattern_centers[p].to_point2f()/*cvPoint(10, 30)*/, FONT_HERSHEY_COMPLEX_SMALL, 1, cvScalar(0, 0, 255), 2);
         }
-        if (min_distance == -1) {
+        if (distance_prom / pattern_centers.size() > radio_prom) {
             pattern_centers.clear();
             return;
         }
 
-
-    }
-    if (pattern_centers.size() == 20) {
         line(drawing, pattern_centers[0].to_point2f() , pattern_centers[4].to_point2f() , color_palette[0], 1);
         line(drawing, pattern_centers[5].to_point2f() , pattern_centers[4].to_point2f() , color_palette[1], 1);
         line(drawing, pattern_centers[5].to_point2f() , pattern_centers[9].to_point2f() , color_palette[1], 1);
@@ -374,7 +442,6 @@ void draw_lines_pattern_from_ellipses(Mat &drawing, vector<PatterPoint> &pattern
         line(drawing, pattern_centers[15].to_point2f(), pattern_centers[14].to_point2f(), color_palette[3], 1);
         line(drawing, pattern_centers[15].to_point2f(), pattern_centers[19].to_point2f(), color_palette[3], 1);
     }
-
 }
 
 /**
