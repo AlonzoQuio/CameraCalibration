@@ -43,7 +43,7 @@ int main( int argc, char** argv ) {
     }
 
     cap.read(frame);
-    total_frames= cap.get(CAP_PROP_FRAME_COUNT);
+    total_frames = cap.get(CAP_PROP_FRAME_COUNT);
     double fps = cap.get(CV_CAP_PROP_FPS);
     int w = frame.rows;
     int h = frame.cols;
@@ -56,28 +56,29 @@ int main( int argc, char** argv ) {
     //int window_w = 640;
     //int window_h = 480;
     int second_screen_offste = 0;
-
+    string window_name;
+    
     /* WINDOW SETUP */
-    string window_name = "Original";
+    window_name = "Original";
     namedWindow(window_name, WINDOW_NORMAL);
     resizeWindow(window_name, window_w, window_h);
     moveWindow(window_name, 0 + second_screen_offste, 0);
-
+    
     window_name = "Masked";
     namedWindow(window_name, WINDOW_NORMAL);
     resizeWindow(window_name, window_w, window_h);
     moveWindow(window_name, window_w + second_screen_offste, 0);
-
+    
     window_name = "Threshold";
     namedWindow(window_name, WINDOW_NORMAL);
     resizeWindow(window_name, window_w, window_h);
     moveWindow(window_name, window_w * 2 + second_screen_offste, 0);
-
+    
     window_name = "Contours";
     namedWindow(window_name, WINDOW_NORMAL);
     resizeWindow(window_name, window_w, window_h);
     moveWindow(window_name, 0 + second_screen_offste, window_h + 40);
-
+    
     window_name = "Elipses";
     namedWindow(window_name, WINDOW_NORMAL);
     resizeWindow(window_name, window_w, window_h);
@@ -87,11 +88,13 @@ int main( int argc, char** argv ) {
     namedWindow(window_name, WINDOW_NORMAL);
     resizeWindow(window_name, window_w, window_h);
     moveWindow(window_name, window_w * 2 + second_screen_offste, window_h + 40);
+    //resizeWindow(window_name, 960,640);
+    //moveWindow(window_name, 0,0);
 
-    /*window_name = "Rate";
-    namedWindow(window_name, WINDOW_NORMAL);
-    resizeWindow(window_name, window_w*3, 10);
-    moveWindow(window_name, 0 + second_screen_offste, window_h*2 + 40);*/
+    //window_name = "Rate";
+    //namedWindow(window_name, WINDOW_NORMAL);
+    //resizeWindow(window_name, window_w*3, 10);
+    //moveWindow(window_name, 0 + second_screen_offste, window_h*2 + 40);
 
     while (1) {
 
@@ -142,7 +145,7 @@ int main( int argc, char** argv ) {
         imshow("Rate", m_success_rate);
 
         execTime = (getTickCount() * 1.0000 - prevCount) / (getTickFrequency() * 1.0000);
-        if(total_frames==n_frame){
+        if (total_frames == n_frame) {
             cout << success_rate.str() << endl;
             cout << fps.str() << endl;
         }
