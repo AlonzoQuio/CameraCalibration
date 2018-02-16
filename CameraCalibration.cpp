@@ -19,7 +19,7 @@ int main( int argc, char** argv ) {
     execTime = prevCount = time = 0;
     Mat original, frame, frame_gray, masked;
     Mat m_success_rate, m_fps;
-    int wait_key = 1;
+    int wait_key = 0;
     int original_wait_key = wait_key;
     int keep_per_frames = 2;
     Point mask_points[1][4];

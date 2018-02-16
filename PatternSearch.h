@@ -348,17 +348,16 @@ void draw_lines_pattern_from_ellipses(Mat &drawing, vector<PatterPoint> &pattern
 
                         if (!found) {
                             for (int l = 0; l < line_points.size(); l++) {
-
                                 pattern_centers.push_back(line_points[l]);
                             }
 
                             limit_points.push_back(line_points[0]);
-                            limit_points.push_back(line_points[1]);
-                            if (line_color != 0) {
-                                line(drawing, line_points[1].to_point2f(), limit_points[line_color * 2 - 2].to_point2f(), color_palette[line_color], 2);
-                            }
-                            line(drawing, line_points[0].to_point2f(), line_points[1].to_point2f(), color_palette[line_color], 2);
-                            line_color++;
+                            limit_points.push_back(line_points[4]);
+                            //if (line_color != 0) {
+                            //    line(drawing, line_points[4].to_point2f(), limit_points[line_color * 2 - 2].to_point2f(), color_palette[line_color], 2);
+                            //}
+                            //line(drawing, line_points[0].to_point2f(), line_points[4].to_point2f(), color_palette[line_color], 2);
+                            //line_color++;
                         }
                     }
                 }
