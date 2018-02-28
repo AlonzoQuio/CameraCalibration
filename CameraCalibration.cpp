@@ -55,9 +55,9 @@ int main( int argc, char** argv ) {
 
     //VideoCapture cap(LIFE_CAM);
     //VideoCapture cap(KINECT_V2);
-    //VideoCapture cap(PS3_EYE_CAM);
+    VideoCapture cap(PS3_EYE_CAM);
     //VideoCapture cap(REAL_SENSE);
-    VideoCapture cap(CALIBRATION_VIDEO);
+    //VideoCapture cap(CALIBRATION_VIDEO);
     //VideoCapture cap(TEST_CALIBRATION_VIDEO);
 
     if ( !cap.isOpened() ) {
