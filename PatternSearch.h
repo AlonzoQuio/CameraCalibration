@@ -1,64 +1,36 @@
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
-#include <opencv2/calib3d/calib3d.hpp>
+//#include <opencv2/calib3d/calib3d.hpp>
+#include "PatternPoint.h"
 
 using namespace cv;
 using namespace std;
 
-/**
- * @details Class to save patter point information
- */
-class PatterPoint {
-public:
-    float x;
-    float y;
-    float radio;
-    int h_father;
-    PatterPoint() {
-        x = 0;
-        y = 0;
-        radio = 0;
-    }
-    PatterPoint(float x, float y, float radio, int h_father) {
-        this->x = x;
-        this->y = y;
-        this->radio = radio;
-        this->h_father = h_father;
-    }
-    float distance(PatterPoint p) {
-        return sqrt(pow(x - p.x, 2) + pow(y - p.y, 2));
-    }
-    Point2f to_point2f() {
-        return Point2f(x, y);
-    }
-    Point2f center() {
-        return Point2f(x, y);
-    }
-};
 
-void draw_lines_pattern_from_ellipses(Mat &out, vector<PatterPoint> &pattern_centers, vector<PatterPoint> new_pattern_points);
-void update_mask_from_points(vector<PatterPoint> points, int w, int h, Point mask_point[][4]);
-int mode_from_father(vector<PatterPoint> pattern_points);
-int find_pattern_points(Mat &src_gray, Mat &masked, Mat&original, int w, int h, Point mask_point[][4], vector<PatterPoint> &pattern_points, int &keep_per_frames);
-float angle_between_two_points(PatterPoint p1, PatterPoint p2);
-float distance_to_rect(PatterPoint p1, PatterPoint p2, PatterPoint x);
-vector<PatterPoint> more_distant_points(vector<PatterPoint>points);
+
+void draw_lines_pattern_from_ellipses(Mat &out, vector<PatternPoint> &pattern_centers, vector<PatternPoint> new_pattern_points);
+void update_mask_from_points(vector<PatternPoint> points, int w, int h, Point mask_point[][4]);
+int mode_from_father(vector<PatternPoint> pattern_points);
+int find_pattern_points(Mat &src_gray, Mat &masked, Mat&original, int w, int h, Point mask_point[][4], vector<PatternPoint> &pattern_points, int &keep_per_frames);
+float angle_between_two_points(PatternPoint p1, PatternPoint p2);
+float distance_to_rect(PatternPoint p1, PatternPoint p2, PatternPoint x);
+vector<PatternPoint> more_distant_points(vector<PatternPoint>points);
 
 /**
- * @details Function to support PatterPoint sort by hierarchy
+ * @details Function to support PatternPoint sort by hierarchy
  *
  * @param p1 First point
  * @param p2 Second point
  *
  * @return father hierarchy of point 1 is lower than father hierarchy of point 2
  */
-bool sort_pattern_point_by_father(PatterPoint p1, PatterPoint p2) {
+bool sort_pattern_point_by_father(PatternPoint p1, PatternPoint p2) {
     return p1.h_father < p2.h_father;
 }
-bool sort_pattern_point_by_x(PatterPoint p1, PatterPoint p2) {
+bool sort_pattern_point_by_x(PatternPoint p1, PatternPoint p2) {
     return p1.x < p2.x;
 }
-bool sort_pattern_point_by_y(PatterPoint p1, PatterPoint p2) {
+bool sort_pattern_point_by_y(PatternPoint p1, PatternPoint p2) {
     return p1.y < p2.y;
 }
 /**
@@ -67,11 +39,11 @@ bool sort_pattern_point_by_y(PatterPoint p1, PatterPoint p2) {
  * @param pattern_points Vector of points
  * @return father hierarchy mode
  */
-int mode_from_father(vector<PatterPoint> points) {
+int mode_from_father(vector<PatternPoint> points) {
     if (points.size() == 0) {
         return -1;
     }
-    vector<PatterPoint> temp;
+    vector<PatternPoint> temp;
     for (int p = 0; p < points.size(); p++) {
         temp.push_back(points[p]);
     }
@@ -102,12 +74,12 @@ int mode_from_father(vector<PatterPoint> points) {
 }
 
 
-int find_pattern_points(Mat &src_gray, Mat &masked, Mat&original, int w, int h, Point mask_point[][4], vector<PatterPoint> &pattern_points, int &keep_per_frames) {
+int find_pattern_points(Mat &src_gray, Mat &masked, Mat&original, int w, int h, Point mask_point[][4], vector<PatternPoint> &pattern_points, int &keep_per_frames) {
 
     vector<vector<Point> > contours;
     vector<Vec4i> hierarchy;
-    vector<PatterPoint> ellipses_temp;
-    vector<PatterPoint> new_pattern_points;
+    vector<PatternPoint> ellipses_temp;
+    vector<PatternPoint> new_pattern_points;
     float radio_hijo;
     float radio;
     float radio_prom = 0;
@@ -142,10 +114,18 @@ int find_pattern_points(Mat &src_gray, Mat &masked, Mat&original, int w, int h, 
                     radio_hijo = (elipseHijo.size.height + elipseHijo.size.width) / 4;
                     /* Check center proximity */
                     if ( /*radio <= radio_hijo * 2 &&*/ cv::norm(elipse.center - elipseHijo.center) < radio_hijo / 2) {
-                        ellipses_temp.push_back(PatterPoint((elipse.center.x + elipseHijo.center.x ) / 2,
-                                                            (elipse.center.y + elipseHijo.center.y ) / 2,
+                        ellipses_temp.push_back(PatternPoint((elipse.center.x + elipseHijo.center.x ) / 2,
+                                                             (elipse.center.y + elipseHijo.center.y ) / 2,
+                                                             radio,
+                                                             hierarchy[c][3]));
+                        /*ellipses_temp.push_back(PatternPoint(elipse.center.x,
+                                                             elipse.center.y,
                                                             radio,
-                                                            hierarchy[c][3]));
+                                                            hierarchy[c][3]));*/
+                        /*ellipses_temp.push_back(PatternPoint(elipseHijo.center.x,
+                                                             elipseHijo.center.y,
+                                                            radio,
+                                                            hierarchy[c][3]));*/
                         ellipse(masked, elipseHijo, red, 2);
                         ellipse(masked, elipse, yellow, 2);
                     }
@@ -188,7 +168,7 @@ int find_pattern_points(Mat &src_gray, Mat &masked, Mat&original, int w, int h, 
             ellipse(masked, elipse, white, 5);
 
             /* CLEAN USING MODE */
-            vector<PatterPoint> temp ;
+            vector<PatternPoint> temp ;
             for (int e = 0; e < new_pattern_points.size(); e++) {
                 if (new_pattern_points[e].h_father == mode) {
                     temp.push_back(new_pattern_points[e]);
@@ -230,7 +210,7 @@ int find_pattern_points(Mat &src_gray, Mat &masked, Mat&original, int w, int h, 
  * @param x  Point to calc the distance to the line
  * @return Distance from the built line to x point
  */
-float distance_to_rect(PatterPoint p1, PatterPoint p2, PatterPoint x) {
+float distance_to_rect(PatternPoint p1, PatternPoint p2, PatternPoint x) {
     float result = abs((p2.y - p1.y) * x.x - (p2.x - p1.x) * x.y + p2.x * p1.y - p2.y * p1.x) / sqrt(pow(p2.y - p1.y, 2) + pow(p2.x - p1.x, 2));
     return result;
 }
@@ -241,7 +221,7 @@ float distance_to_rect(PatterPoint p1, PatterPoint p2, PatterPoint x) {
  * @param points Poinst to be evaluate
  * @return Most distant points order by x coordinate
  */
-vector<PatterPoint> more_distant_points(vector<PatterPoint> points) {
+vector<PatternPoint> more_distant_points(vector<PatternPoint> points) {
     float distance = 0;
     double temp;
     int p1, p2;
@@ -263,7 +243,7 @@ vector<PatterPoint> more_distant_points(vector<PatterPoint> points) {
         p1 = p2;
         p2 = distance;
     }
-    vector<PatterPoint> p;
+    vector<PatternPoint> p;
     p.push_back(points[p1]);
     p.push_back(points[p2]);
     return p;
@@ -274,7 +254,7 @@ vector<PatterPoint> more_distant_points(vector<PatterPoint> points) {
  * @param drawing Mat to draw patter
  * @param pattern_centers Patter points found
  */
-void draw_lines_pattern_from_ellipses(Mat &drawing, vector<PatterPoint> &pattern_centers, vector<PatterPoint> new_pattern_points) {
+void draw_lines_pattern_from_ellipses(Mat &drawing, vector<PatternPoint> &pattern_centers, vector<PatternPoint> new_pattern_points) {
     if (new_pattern_points.size() < 20 && pattern_centers.size() < 20) {
         return;
     }
@@ -289,11 +269,13 @@ void draw_lines_pattern_from_ellipses(Mat &drawing, vector<PatterPoint> &pattern
     float pattern_range = 5;
     float distance;
     float min_distance;
+    float prom_distance = 0.0;
+    int distance_elements = 0;
     int replace_point;
     int line_color = 0;
-    vector<PatterPoint> temp;
-    vector<PatterPoint> line_points;
-    vector<PatterPoint> limit_points;
+    vector<PatternPoint> temp;
+    vector<PatternPoint> line_points;
+    vector<PatternPoint> limit_points;
     if (pattern_centers.size() == 0) {
         centers = new_pattern_points.size();
         for (int i = 0; i < centers; i++) {
@@ -303,7 +285,10 @@ void draw_lines_pattern_from_ellipses(Mat &drawing, vector<PatterPoint> &pattern
                     line_points.clear();
                     coincidendes = 0;
                     for (int k = 0; k < centers; k++) {
-                        if (distance_to_rect(new_pattern_points[i], new_pattern_points[j], new_pattern_points[k]) < pattern_range) {
+                        min_distance = distance_to_rect(new_pattern_points[i], new_pattern_points[j], new_pattern_points[k]);
+                        prom_distance += min_distance;
+                        distance_elements++;
+                        if (min_distance < pattern_range) {
                             coincidendes++;
                             line_points.push_back(new_pattern_points[k]);
                         }
@@ -333,6 +318,7 @@ void draw_lines_pattern_from_ellipses(Mat &drawing, vector<PatterPoint> &pattern
                 }
             }
         }
+        cout << "Elements checked " << distance_elements << " prom " << prom_distance/distance_elements << endl;
     } else {
         //cout << "Pattern Traking" << endl;
 
@@ -346,6 +332,8 @@ void draw_lines_pattern_from_ellipses(Mat &drawing, vector<PatterPoint> &pattern
                     replace_point = n;
                 }
             }
+            distance_elements += min_distance;
+            distance_elements++;
             if (min_distance > pattern_centers[p].radio) {
                 min_distance = -1;
                 break;
@@ -358,6 +346,7 @@ void draw_lines_pattern_from_ellipses(Mat &drawing, vector<PatterPoint> &pattern
             pattern_centers[p] = new_pattern_points[replace_point];
             putText(drawing, to_string(p), pattern_centers[p].to_point2f()/*cvPoint(10, 30)*/, FONT_HERSHEY_COMPLEX_SMALL, 1, cvScalar(0, 0, 255), 2);
         }
+        cout << "Elements checked " << distance_elements << " prom " << prom_distance/distance_elements << endl;
         if (min_distance == -1) {
             pattern_centers.clear();
             return;
@@ -385,7 +374,7 @@ void draw_lines_pattern_from_ellipses(Mat &drawing, vector<PatterPoint> &pattern
  * @param h Original image height
  * @param mask_point Array which store mask points
  */
-void update_mask_from_points(vector<PatterPoint> points, int w, int h, Point mask_point[][4]) {
+void update_mask_from_points(vector<PatternPoint> points, int w, int h, Point mask_point[][4]) {
     if (points.size() < 20) {
         mask_point[0][0]  = Point(0, 0);
         mask_point[0][1]  = Point(h, 0);
