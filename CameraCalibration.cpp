@@ -1,4 +1,5 @@
 #include <iostream>
+#include <iomanip>
 #include "ImagePreprocessing.h"
 #include "PatternSearch.h"
 #include "CalibrateCamera.h"
@@ -37,6 +38,7 @@ int main( int argc, char** argv ) {
     Mat img;
     int total_frames;
     float rms = -1;
+    float distance_prom = 0.0;
     vector<PatternPoint> pattern_points;
     vector<vector<Point2f>> set_points;
     int num_color_palette = 100;
@@ -74,10 +76,10 @@ int main( int argc, char** argv ) {
     mask_points[0][1]  = Point(h, 0);
     mask_points[0][2]  = Point(h, w);
     mask_points[0][3]  = Point(0, w);
-    //int window_w = 360 * 1.25;
-    //int window_h = 240 * 1.25;
-    int window_w = 640;
-    int window_h = 480;
+    int window_w = 360 * 1.25;
+    int window_h = 240 * 1.25;
+    //int window_w = 640;
+    //int window_h = 480;
     int second_screen_offste = 0;
     string window_name;
 
@@ -130,17 +132,17 @@ int main( int argc, char** argv ) {
             cout << "\n Cannot read the video file. \n";
             break;
         }
-        /*// Use loaded parameters
-        cameraMatrix = (Mat_<double>(3,3) << 638.35848013511, 0, 318.0732749667285,
-                            0, 642.2840086097892, 254.4917790852329,
-                            0, 0, 1);
-        
-        distCoeffs = (Mat_<double>(1,4) <<-0.305400774036524,
-                          0.1616945505031097,
-                          -0.002354577710289191,
-                          0.004283624946433994,
-                          -0.1375998250104978);
-        rms = 0.1588;
+        // Use loaded parameters
+        cameraMatrix = (Mat_<double>(3, 3) << 704.4505693034351, 0, 311.4426946003828,
+                        0, 698.7936979924845, 269.3265974320346,
+                        0, 0, 1);
+
+        distCoeffs = (Mat_<double>(1, 5) << -0.4208026667041947,
+                      -0.09375550714245455,
+                      -0.0148338157966529,
+                      -0.001379430306908126,
+                      0.9198347685142195);
+        rms = 0.47;
         if (rms != -1) {
             Mat rview, map1, map2;
             initUndistortRectifyMap(cameraMatrix,
@@ -154,11 +156,11 @@ int main( int argc, char** argv ) {
 
             remap(frame, rview, map1, map2, INTER_LINEAR);
             //remap(original, rview, map1, map2, INTER_LINEAR);
-            imshow("Undistort", rview);
-            rms_str << "Reprojection error: " << rms;
-            putText(m_success_rate, rms_str.str(), cvPoint(window_w * 1.5, 30), FONT_HERSHEY_PLAIN, 2, cvScalar(0, 255, 0), 1, CV_AA);
+            //imshow("Undistort", rview);
+            //rms_str << "Reprojection error: " << rms;
+            //putText(m_success_rate, rms_str.str(), cvPoint(window_w * 1.5, 30), FONT_HERSHEY_PLAIN, 2, cvScalar(0, 255, 0), 1, CV_AA);
             frame = rview;
-        }*/
+        }
 
         original = frame.clone();
         //imshow("Original", original);
@@ -177,13 +179,14 @@ int main( int argc, char** argv ) {
         imshow("Contours", frame_gray);
         imshow("Elipses", masked);
 
-        if (n_frame == 315) {
+        /*if (n_frame == 200) {
             wait_key = 0;
-        }
+        }*/
         time += execTime;
 
         if (detected_points == 20) {
             success_frames ++;
+            distance_prom +=avgColinearDistance(pattern_points);
         }
 
         imshow("Result", original );
@@ -191,6 +194,7 @@ int main( int argc, char** argv ) {
         n_frame++;
 
         if (rms != -1) {
+            /*
             Mat rview, map1, map2;
             initUndistortRectifyMap(cameraMatrix,
                                     distCoeffs,
@@ -203,10 +207,11 @@ int main( int argc, char** argv ) {
 
             remap(original, rview, map1, map2, INTER_LINEAR);
             imshow("Undistort", rview);
-            rms_str << "Reprojection error: " << rms;
-            putText(m_success_rate, rms_str.str(), cvPoint(window_w * 1.5, 30), FONT_HERSHEY_PLAIN, 2, cvScalar(0, 255, 0), 1, CV_AA);
+            */
+            //rms_str << "Rep. error: " << rms << " avg " << distance_prom/success_frames;
+            //putText(m_success_rate, rms_str.str(), cvPoint(window_w * 1.5, 30), FONT_HERSHEY_PLAIN, 2, cvScalar(0, 255, 0), 1, CV_AA);
         } else {
-            if (n_frame % 15 == 0 && detected_points == 20) {
+            if (n_frame % 10 == 0 && detected_points == 20) {
                 vector<Point2f> temp(20);
                 for (int i = 0; i < 20; i++) {
                     temp[i] = pattern_points[i].to_point2f();
@@ -228,11 +233,14 @@ int main( int argc, char** argv ) {
             }
         }
         imshow("Calibration", m_calibration);
-        fps << execTime * 1000 << "ms" ;
+        fps << std::fixed << std::setprecision(2) <<execTime * 1000 << "ms" ;
         execTime = (getTickCount() * 1.0000 - prevCount) / (getTickFrequency() * 1.0000);
-        success_rate << "Success rate: " << success_frames << " / " << n_frame <<  " = " << success_frames * 100.0 / n_frame ;// << "% with " << time/(n_frame-1) * 1000.0;
-        putText(m_success_rate, fps.str(), cvPoint(window_w * 3 - 250, 30), FONT_HERSHEY_PLAIN, 2, cvScalar(0, 255, 0), 1, CV_AA);
+        success_rate << "S. Rate: " << success_frames << "/" << n_frame <<  " = " << std::fixed << std::setprecision(2) << success_frames * 100.0 / n_frame  << "%";
         putText(m_success_rate, success_rate.str(), cvPoint(10, 30), FONT_HERSHEY_PLAIN, 2, cvScalar(0, 255, 0), 1, CV_AA);
+        putText(m_success_rate, fps.str(), cvPoint(window_w * 2.5, 30), FONT_HERSHEY_PLAIN, 2, cvScalar(0, 255, 0), 1, CV_AA);
+
+        rms_str << "Rep. error: " << std::fixed << std::setprecision(2)<< rms << " AVG: " << std::fixed << std::setprecision(2)<< distance_prom/success_frames;
+        putText(m_success_rate, rms_str.str(), cvPoint(window_w * 1.2, 30), FONT_HERSHEY_PLAIN, 2, cvScalar(0, 255, 0), 1, CV_AA);
 
         imshow("Rate", m_success_rate);
 

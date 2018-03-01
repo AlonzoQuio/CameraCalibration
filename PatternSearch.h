@@ -15,7 +15,7 @@ int find_pattern_points(Mat &src_gray, Mat &masked, Mat&original, int w, int h, 
 float angle_between_two_points(PatternPoint p1, PatternPoint p2);
 float distance_to_rect(PatternPoint p1, PatternPoint p2, PatternPoint x);
 vector<PatternPoint> more_distant_points(vector<PatternPoint>points);
-
+float avgColinearDistance(vector<PatternPoint> &points);
 /**
  * @details Function to support PatternPoint sort by hierarchy
  *
@@ -72,7 +72,6 @@ int mode_from_father(vector<PatternPoint> points) {
         return mode;
     }
 }
-
 
 int find_pattern_points(Mat &src_gray, Mat &masked, Mat&original, int w, int h, Point mask_point[][4], vector<PatternPoint> &pattern_points, int &keep_per_frames) {
 
@@ -318,7 +317,7 @@ void draw_lines_pattern_from_ellipses(Mat &drawing, vector<PatternPoint> &patter
                 }
             }
         }
-        cout << "Elements checked " << distance_elements << " prom " << prom_distance/distance_elements << endl;
+        //cout << "Elements checked " << distance_elements << " prom " << prom_distance / distance_elements << endl;
     } else {
         //cout << "Pattern Traking" << endl;
 
@@ -346,7 +345,7 @@ void draw_lines_pattern_from_ellipses(Mat &drawing, vector<PatternPoint> &patter
             pattern_centers[p] = new_pattern_points[replace_point];
             putText(drawing, to_string(p), pattern_centers[p].to_point2f()/*cvPoint(10, 30)*/, FONT_HERSHEY_COMPLEX_SMALL, 1, cvScalar(0, 0, 255), 2);
         }
-        cout << "Elements checked " << distance_elements << " prom " << prom_distance/distance_elements << endl;
+        //cout << "Elements checked " << distance_elements << " prom " << prom_distance / distance_elements << endl;
         if (min_distance == -1) {
             pattern_centers.clear();
             return;
@@ -355,6 +354,7 @@ void draw_lines_pattern_from_ellipses(Mat &drawing, vector<PatternPoint> &patter
 
     }
     if (pattern_centers.size() == 20) {
+        //avgColinearDistance(pattern_centers);
         line(drawing, pattern_centers[0].to_point2f() , pattern_centers[4].to_point2f() , color_palette[0], 1);
         line(drawing, pattern_centers[5].to_point2f() , pattern_centers[4].to_point2f() , color_palette[1], 1);
         line(drawing, pattern_centers[5].to_point2f() , pattern_centers[9].to_point2f() , color_palette[1], 1);
@@ -404,4 +404,25 @@ void update_mask_from_points(vector<PatternPoint> points, int w, int h, Point ma
     mask_point[0][1]  = Point((rect_points[1].x - mask_center.x) * scale + mask_center.x, (rect_points[1].y - mask_center.y) * scale + mask_center.y);
     mask_point[0][2]  = Point((rect_points[2].x - mask_center.x) * scale + mask_center.x, (rect_points[2].y - mask_center.y) * scale + mask_center.y);
     mask_point[0][3]  = Point((rect_points[3].x - mask_center.x) * scale + mask_center.x, (rect_points[3].y - mask_center.y) * scale + mask_center.y);
+}
+float avgColinearDistance(vector<PatternPoint> &points) {
+    float prom_distance = 0.0;
+    prom_distance += distance_to_rect(points[0],points[4],points[1]);
+    prom_distance += distance_to_rect(points[0],points[4],points[2]);
+    prom_distance += distance_to_rect(points[0],points[4],points[3]);
+
+    prom_distance += distance_to_rect(points[5],points[9],points[6]);
+    prom_distance += distance_to_rect(points[5],points[9],points[7]);
+    prom_distance += distance_to_rect(points[5],points[9],points[8]);
+    
+    prom_distance += distance_to_rect(points[10],points[14],points[11]);
+    prom_distance += distance_to_rect(points[10],points[14],points[12]);
+    prom_distance += distance_to_rect(points[10],points[14],points[13]);
+    
+    prom_distance += distance_to_rect(points[15],points[19],points[16]);
+    prom_distance += distance_to_rect(points[15],points[19],points[17]);
+    prom_distance += distance_to_rect(points[15],points[19],points[18]);
+    
+    //cout << "Prom value " << prom_distance / 12.0 << endl;
+    return prom_distance / 12.0 ;
 }
