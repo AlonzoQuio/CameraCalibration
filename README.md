@@ -32,6 +32,27 @@ Realtime test using MS Life cam camera
 
 [![Realtime test using MS Life cam camera](https://img.youtube.com/vi/Mj2aXRs_yH8/0.jpg)](http://www.youtube.com/watch?v=Mj2aXRs_yH8)
 
+
+```
+Calibration process using the PS3 camera
+```
+[![Realtime test using MS Life cam camera](https://img.youtube.com/vi/SeETo6rh8Dc/0.jpg)](http://www.youtube.com/watch?v=SeETo6rh8Dc)
+
+```
+Pattern detection over undistort video PS3
+```
+[![Realtime test using MS Life cam camera](https://img.youtube.com/vi/kJqUyMwAxqw/0.jpg)](http://www.youtube.com/watch?v=kJqUyMwAxqw)
+
+```
+Calibration process using the Lifecam camera
+```
+[![Realtime test using MS Life cam camera](https://img.youtube.com/vi/3aO17O0WskU/0.jpg)](http://www.youtube.com/watch?v=3aO17O0WskU)
+
+```
+Pattern detection over undistort video Lifecam
+```
+[![Realtime test using MS Life cam camera](https://img.youtube.com/vi/G8c-f89xj18/0.jpg)](http://www.youtube.com/watch?v=G8c-f89xj18)
+
 ## Authors
 
 * **Raúl Romaní** - *Master student at UCSP*
