@@ -1,12 +1,9 @@
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
-//#include <opencv2/calib3d/calib3d.hpp>
 #include "PatternPoint.h"
 
 using namespace cv;
 using namespace std;
-
-
 
 void draw_lines_pattern_from_ellipses(Mat &out, vector<PatternPoint> &pattern_centers, vector<PatternPoint> new_pattern_points);
 void update_mask_from_points(vector<PatternPoint> points, int w, int h, Point mask_point[][4]);
@@ -162,7 +159,7 @@ int find_pattern_points(Mat &src_gray, Mat &masked, Mat&original, int w, int h, 
     /* Clean false positive checking the father hierarchy */
     if (new_pattern_points.size() > 20) {
         int mode = mode_from_father(new_pattern_points);
-        if (mode != -1) {
+        if (mode != -1 && contours[mode].size()>4) {
             RotatedRect elipse  = fitEllipse( Mat(contours[mode]) );
             ellipse(masked, elipse, white, 5);
 
@@ -405,6 +402,7 @@ void update_mask_from_points(vector<PatternPoint> points, int w, int h, Point ma
     mask_point[0][2]  = Point((rect_points[2].x - mask_center.x) * scale + mask_center.x, (rect_points[2].y - mask_center.y) * scale + mask_center.y);
     mask_point[0][3]  = Point((rect_points[3].x - mask_center.x) * scale + mask_center.x, (rect_points[3].y - mask_center.y) * scale + mask_center.y);
 }
+
 float avgColinearDistance(vector<PatternPoint> &points) {
     float prom_distance = 0.0;
     prom_distance += distance_to_rect(points[0],points[4],points[1]);

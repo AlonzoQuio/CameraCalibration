@@ -1,6 +1,5 @@
 #include <iostream>
 #include "opencv2/calib3d.hpp"
-//#include "PatternPoint.h"
 
 using namespace std;
 using namespace cv;

@@ -7,16 +7,9 @@
 using namespace cv;
 using namespace std;
 
-//#define LIFE_CAM "/home/alonzo/Documentos/Projects/CameraCalibration_2/video/calibration_mslifecam.avi"
-//#define KINECT_V2 "/home/alonzo/Documentos/Projects/CameraCalibration_2/video/calibration_kinectv2.avi"
-#define KINECT_V2 "/home/alonzo/Documentos/Projects/CameraCalibration_2/video/calibration_kinectv2_litte.mp4"
-//#define PS3_EYE_CAM "/home/alonzo/Documentos/Projects/CameraCalibration_2/video/calibration_ps3eyecam.avi"
-#define REAL_SENSE "/home/alonzo/Documentos/Projects/CameraCalibration_2/video/calibration_realsense.avi"
-
-#define LIFE_CAM "calibration_videos/calibration_mslifecam.avi"
-#define PS3_EYE_CAM "calibration_videos/calibration_ps3eyecam.avi"
-#define CALIBRATION_VIDEO "/home/alonzo/Documentos/Projects/CameraCalibration/calibration_videos/ellipses.avi"
-#define TEST_CALIBRATION_VIDEO "/home/alonzo/Documentos/Projects/CameraCalibration/out.avi"
+#define CALIBRATION_PS3_OWN_VIDEO "/home/alonzo/Documentos/Projects/CameraCalibration/calibration_videos/ellipses.avi"
+#define CALIBRATION_LIFECAM_VIDEO "/home/alonzo/Documentos/Projects/CameraCalibration/calibration_videos/LifeCam_Rings.wmv"
+#define CALIBRATION_PS3_VIDEO     "/home/alonzo/Documentos/Projects/CameraCalibration/calibration_videos/PS3_Rings.webm"
 
 int main( int argc, char** argv ) {
     long double execTime, prevCount, time;
@@ -48,19 +41,15 @@ int main( int argc, char** argv ) {
         color_palette[i] = Scalar(rng.uniform(0, 255), rng.uniform(0, 255), rng.uniform(0, 255));
     }
 
-    /* For video from webcam */
     //VideoCapture cap(0);
 
     //cap.set(cv::CAP_PROP_FPS,60);
     //int fps = cap.get(cv::CAP_PROP_FPS);
     //cout<<fps<<endl;
-
-    //VideoCapture cap(LIFE_CAM);
-    //VideoCapture cap(KINECT_V2);
-    VideoCapture cap(PS3_EYE_CAM);
-    //VideoCapture cap(REAL_SENSE);
-    //VideoCapture cap(CALIBRATION_VIDEO);
-    //VideoCapture cap(TEST_CALIBRATION_VIDEO);
+    
+    //VideoCapture cap(CALIBRATION_LIFECAM_VIDEO);
+    VideoCapture cap(CALIBRATION_PS3_VIDEO);
+    //VideoCapture cap(CALIBRATION_PS3_OWN_VIDEO);
 
     if ( !cap.isOpened() ) {
         cout << "Cannot open the video file. \n";
@@ -119,8 +108,6 @@ int main( int argc, char** argv ) {
     namedWindow(window_name, WINDOW_NORMAL);
     resizeWindow(window_name, window_w, window_h);
     moveWindow(window_name, window_w * 2 + second_screen_offste, window_h + 40);
-    //resizeWindow(window_name, 960,640);
-    //moveWindow(window_name, 0,0);
 
     while (1) {
         std::ostringstream fps, success_rate, rms_str;
@@ -132,17 +119,45 @@ int main( int argc, char** argv ) {
             cout << "\n Cannot read the video file. \n";
             break;
         }
-        // Use loaded parameters
-        cameraMatrix = (Mat_<double>(3, 3) << 704.4505693034351, 0, 311.4426946003828,
-                        0, 698.7936979924845, 269.3265974320346,
+        
+        /*
+        // PS3 Calib parameters
+        cameraMatrix = (Mat_<double>(3, 3) << 981.5523910367757, 0, 321.6472593239408,
+                                              0, 985.5673824533241, 249.7667652724732,
+                                              0, 0, 1);
+
+        distCoeffs = (Mat_<double>(1, 5) << -0.2878738048784789,
+                                            -0.8922113278226899,
+                                            -0.005158880614104027,
+                                             0.001732412039424409,
+                                             6.188356951489971);
+        rms = 0.283131;*/
+        
+        
+        // LifeCam Calib parameters
+        /*cameraMatrix = (Mat_<double>(3, 3) << 491.4405282831675, 0, 327.9785120018882,
+                                                0, 495.4743159461514, 161.9086412476154,
+                                                0, 0, 1);
+
+        distCoeffs = (Mat_<double>(1, 5) <<  0.07620779848197567,
+                                            -0.3061027679646847,
+                                            -0.003793482673813354,
+                                            -0.001091898581863525,
+                                             0.1548586795716237);
+        rms = 0.207939;*/
+
+        /*
+        // PS3 own video parameters
+        cameraMatrix = (Mat_<double>(3, 3) << 619.8529149086295, 0, 317.8602231908566,
+                        0, 623.7464457495411, 257.8088409771084,
                         0, 0, 1);
 
-        distCoeffs = (Mat_<double>(1, 5) << -0.4208026667041947,
-                      -0.09375550714245455,
-                      -0.0148338157966529,
-                      -0.001379430306908126,
-                      0.9198347685142195);
-        rms = 0.47;
+        distCoeffs = (Mat_<double>(1, 5) << -0.2940861347010496,
+                      0.1480524184491786,
+                      -0.003080858295605339,
+                      0.005568077204929082,
+                      -0.07530280722975796);
+        rms = 0.15688;*/
         if (rms != -1) {
             Mat rview, map1, map2;
             initUndistortRectifyMap(cameraMatrix,
@@ -155,10 +170,7 @@ int main( int argc, char** argv ) {
                                     map2);
 
             remap(frame, rview, map1, map2, INTER_LINEAR);
-            //remap(original, rview, map1, map2, INTER_LINEAR);
-            //imshow("Undistort", rview);
-            //rms_str << "Reprojection error: " << rms;
-            //putText(m_success_rate, rms_str.str(), cvPoint(window_w * 1.5, 30), FONT_HERSHEY_PLAIN, 2, cvScalar(0, 255, 0), 1, CV_AA);
+            imshow("Result", frame);
             frame = rview;
         }
 
@@ -179,50 +191,35 @@ int main( int argc, char** argv ) {
         imshow("Contours", frame_gray);
         imshow("Elipses", masked);
 
-        /*if (n_frame == 200) {
+        /*if (n_frame == 300) {
             wait_key = 0;
         }*/
+
         time += execTime;
 
         if (detected_points == 20) {
             success_frames ++;
-            distance_prom +=avgColinearDistance(pattern_points);
+            distance_prom += avgColinearDistance(pattern_points);
+        }
+        if (rms == -1) {
+            imshow("Result", original );
+        } else {
+            imshow("Undistort", original );
         }
 
-        imshow("Result", original );
-
-        n_frame++;
-
-        if (rms != -1) {
-            /*
-            Mat rview, map1, map2;
-            initUndistortRectifyMap(cameraMatrix,
-                                    distCoeffs,
-                                    Mat(),
-                                    getOptimalNewCameraMatrix(cameraMatrix, distCoeffs, imageSize, 1, imageSize, 0),
-                                    imageSize,
-                                    CV_16SC2,
-                                    map1,
-                                    map2);
-
-            remap(original, rview, map1, map2, INTER_LINEAR);
-            imshow("Undistort", rview);
-            */
-            //rms_str << "Rep. error: " << rms << " avg " << distance_prom/success_frames;
-            //putText(m_success_rate, rms_str.str(), cvPoint(window_w * 1.5, 30), FONT_HERSHEY_PLAIN, 2, cvScalar(0, 255, 0), 1, CV_AA);
-        } else {
-            if (n_frame % 10 == 0 && detected_points == 20) {
+        if (rms == -1) {
+            if (n_frame % 20 == 0 && detected_points == 20) { // 20 30 for ps3 and 10 30 for lifecam
                 vector<Point2f> temp(20);
                 for (int i = 0; i < 20; i++) {
                     temp[i] = pattern_points[i].to_point2f();
                 }
                 set_points.push_back(temp);
 
-                if (set_points.size() == 20) {
+                if (set_points.size() == 30) {
                     rms = calibrate_with_points(imageSize, cameraMatrix, distCoeffs, set_points);
                     cout << "cameraMatrix " << cameraMatrix << endl;
                     cout << "distCoeffs " << distCoeffs << endl;
-                    wait_key = 0;
+                    //wait_key = 0;
                 }
             }
         }
@@ -233,13 +230,13 @@ int main( int argc, char** argv ) {
             }
         }
         imshow("Calibration", m_calibration);
-        fps << std::fixed << std::setprecision(2) <<execTime * 1000 << "ms" ;
+        fps << std::fixed << std::setprecision(2) << execTime * 1000 << "ms" ;
         execTime = (getTickCount() * 1.0000 - prevCount) / (getTickFrequency() * 1.0000);
         success_rate << "S. Rate: " << success_frames << "/" << n_frame <<  " = " << std::fixed << std::setprecision(2) << success_frames * 100.0 / n_frame  << "%";
         putText(m_success_rate, success_rate.str(), cvPoint(10, 30), FONT_HERSHEY_PLAIN, 2, cvScalar(0, 255, 0), 1, CV_AA);
         putText(m_success_rate, fps.str(), cvPoint(window_w * 2.5, 30), FONT_HERSHEY_PLAIN, 2, cvScalar(0, 255, 0), 1, CV_AA);
 
-        rms_str << "Rep. error: " << std::fixed << std::setprecision(2)<< rms << " AVG: " << std::fixed << std::setprecision(2)<< distance_prom/success_frames;
+        rms_str << "Rep. error: " << std::fixed << std::setprecision(2) << rms << " AVG: " << std::fixed << std::setprecision(4) << distance_prom / success_frames;
         putText(m_success_rate, rms_str.str(), cvPoint(window_w * 1.2, 30), FONT_HERSHEY_PLAIN, 2, cvScalar(0, 255, 0), 1, CV_AA);
 
         imshow("Rate", m_success_rate);
@@ -258,11 +255,28 @@ int main( int argc, char** argv ) {
                 wait_key = 0;
             }
         }
+        /*if (t == 'c' && detected_points == 20) {
+            cout << "Frame " << n_frame << endl;
+            vector<Point2f> temp(20);
+            for (int i = 0; i < 20; i++) {
+                temp[i] = pattern_points[i].to_point2f(); 
+            }
+            set_points.push_back(temp);
+
+            if (set_points.size() == 20) {
+                rms = calibrate_with_points(imageSize, cameraMatrix, distCoeffs, set_points);
+                cout << "cameraMatrix " << cameraMatrix << endl;
+                cout << "distCoeffs " << distCoeffs << endl;
+                wait_key = 0;
+            }
+        }*/
+        n_frame++;
+
         //if (t == 'a') {
         //    n_frame--;
         //}
         //if (t == 'd') {
-        //    n_frame++;
+        //    n_frame++; 
         //}
     }
     return 0;
