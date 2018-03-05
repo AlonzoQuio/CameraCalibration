@@ -22,7 +22,7 @@ sudo apt-get install libopencv-dev
 
 ## Resources
 - [Document](https://github.com/AlonzoQuio/CameraCalibration/blob/master/presentation/3.1_paper_CameraCalibration.pdf)
-- [Slides](https://github.com/AlonzoQuio/CameraCalibration/blob/master/presentation/3_ppt_CameraCalibrationt.pdf)
+- [Slides](https://github.com/AlonzoQuio/CameraCalibration/blob/master/presentation/3.1_ppt_CameraCalibrationt.pdf)
 
 ## Camera calibration tests
 ### Rings pattern
