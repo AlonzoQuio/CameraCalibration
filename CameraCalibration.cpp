@@ -8,14 +8,15 @@ using namespace cv;
 using namespace std;
 
 #define CALIBRATION_PS3_OWN_VIDEO "/home/alonzo/Documentos/Projects/CameraCalibration/calibration_videos/ellipses.avi"
-#define CALIBRATION_LIFECAM_VIDEO "/home/alonzo/Documentos/Projects/CameraCalibration/calibration_videos/LifeCam_Rings.wmv"
-#define CALIBRATION_PS3_VIDEO     "/home/alonzo/Documentos/Projects/CameraCalibration/calibration_videos/PS3_Rings.webm"
+#define CALIBRATION_LIFECAM_VIDEO "/home/alonzo/Downloads/LifeCam_rings.avi"
+//#define CALIBRATION_PS3_VIDEO     "/home/alonzo/Downloads/PS3_rings.avi"
+#define CALIBRATION_PS3_VIDEO     "calibration_videos/PS3_Rings.webm"
 
 int main( int argc, char** argv ) {
     long double execTime, prevCount, time;
     execTime = prevCount = time = 0;
     Mat original, frame, frame_gray, masked;
-    Mat m_success_rate, m_fps;
+    Mat m_success_rate;
     Mat m_calibration;
     Mat cameraMatrix;
     Mat distCoeffs;
@@ -28,7 +29,6 @@ int main( int argc, char** argv ) {
     int n_frame = 1;
     int detected_points = 0;
     int success_frames = 0;
-    Mat img;
     int total_frames;
     float rms = -1;
     float distance_prom = 0.0;
@@ -69,8 +69,9 @@ int main( int argc, char** argv ) {
     int window_h = 240 * 1.25;
     //int window_w = 640;
     //int window_h = 480;
-    int second_screen_offste = 0;
+    int second_screen_offste = 0;//1360;
     string window_name;
+    int stop_at_frame = -1; //1200 for ps3 600 for lifecam
 
     /* WINDOW SETUP */
     //window_name = "Original";
@@ -122,30 +123,30 @@ int main( int argc, char** argv ) {
         
         /*
         // PS3 Calib parameters
-        cameraMatrix = (Mat_<double>(3, 3) << 981.5523910367757, 0, 321.6472593239408,
-                                              0, 985.5673824533241, 249.7667652724732,
+        cameraMatrix = (Mat_<double>(3, 3) << 842.277648121042, 0, 306.8028364233875,
+                                              0, 845.9871738025694, 258.6145767605929,
                                               0, 0, 1);
 
-        distCoeffs = (Mat_<double>(1, 5) << -0.2878738048784789,
-                                            -0.8922113278226899,
-                                            -0.005158880614104027,
-                                             0.001732412039424409,
-                                             6.188356951489971);
-        rms = 0.283131;*/
-        
-        
+        distCoeffs = (Mat_<double>(1, 5) << -0.3663343352388944,
+                                             0.2236100121702693,
+                                            -0.001952345044331583,
+                                             0.004004688327188062,
+                                            -0.2475043367750629);
+        rms = 0.134671;
+        */
+        /*
         // LifeCam Calib parameters
-        /*cameraMatrix = (Mat_<double>(3, 3) << 491.4405282831675, 0, 327.9785120018882,
-                                                0, 495.4743159461514, 161.9086412476154,
+        cameraMatrix = (Mat_<double>(3, 3) << 618.3848171468343, 0, 341.9353917933382,
+                                                0, 621.9343954517286, 231.4488417101894,
                                                 0, 0, 1);
 
-        distCoeffs = (Mat_<double>(1, 5) <<  0.07620779848197567,
-                                            -0.3061027679646847,
-                                            -0.003793482673813354,
-                                            -0.001091898581863525,
-                                             0.1548586795716237);
-        rms = 0.207939;*/
-
+        distCoeffs = (Mat_<double>(1, 5) << -0.02287003323277602,
+                                             0.09690594726549269,
+                                             0.004358383321919785,
+                                            -0.002456174770498996,
+                                            -0.4132612693983291);
+        rms = 0.136174;
+        */
         /*
         // PS3 own video parameters
         cameraMatrix = (Mat_<double>(3, 3) << 619.8529149086295, 0, 317.8602231908566,
@@ -157,7 +158,8 @@ int main( int argc, char** argv ) {
                       -0.003080858295605339,
                       0.005568077204929082,
                       -0.07530280722975796);
-        rms = 0.15688;*/
+        rms = 0.15688;
+        */
         if (rms != -1) {
             Mat rview, map1, map2;
             initUndistortRectifyMap(cameraMatrix,
@@ -191,9 +193,9 @@ int main( int argc, char** argv ) {
         imshow("Contours", frame_gray);
         imshow("Elipses", masked);
 
-        /*if (n_frame == 300) {
+        if (n_frame == stop_at_frame) {
             wait_key = 0;
-        }*/
+        }
 
         time += execTime;
 
@@ -208,7 +210,7 @@ int main( int argc, char** argv ) {
         }
 
         if (rms == -1) {
-            if (n_frame % 20 == 0 && detected_points == 20) { // 20 30 for ps3 and 10 30 for lifecam
+            if (n_frame % 10 == 0 && detected_points == 20) { // 60 20 for ps3 and 30 20 for lifecam
                 vector<Point2f> temp(20);
                 for (int i = 0; i < 20; i++) {
                     temp[i] = pattern_points[i].to_point2f();
