@@ -6,7 +6,7 @@ Work in progress for camera calibration using adaptative segmentation and ellips
 
 ## Getting Started
 
-To compile the code you can write in a terminal:
+To compile and run the code you can write in a terminal:
 
 ```
 g++ CameraCalibration.cpp -o CameraCalibration -O3 `pkg-config opencv --cflags --libs` && ./CameraCalibration
@@ -21,7 +21,7 @@ sudo apt-get install libopencv-dev
 ```
 
 ## Resources
-- [Document](https://github.com/AlonzoQuio/CameraCalibration/blob/master/presentation/3_paper_CameraCalibration.pdf)
+- [Document](https://github.com/AlonzoQuio/CameraCalibration/blob/master/presentation/3.1_paper_CameraCalibration.pdf)
 - [Slides](https://github.com/AlonzoQuio/CameraCalibration/blob/master/presentation/3_ppt_CameraCalibrationt.pdf)
 
 ## Camera calibration tests
