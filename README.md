@@ -53,7 +53,8 @@ Pattern detection over undistort video Lifecam
 ```
 [![Pattern detection over undistort video Lifecam](https://img.youtube.com/vi/G8c-f89xj18/0.jpg)](http://www.youtube.com/watch?v=G8c-f89xj18)
 
-<iframe src="https://drive.google.com/file/d/1CZt2dUcotLgbI58_ho13pI4oI6zNAB18/preview" width="640" height="480"></iframe>
+<iframe src="https://drive.google.com/file/d/1CZt2dUcotLgbI58_ho13pI4oI6zNAB18/preview" width="320" height="240"></iframe>
+<iframe src="https://drive.google.com/file/d/1CZt2dUcotLgbI58_ho13pI4oI6zNAB18/preview" width="320" height="240"></iframe>
 
 ## Authors
 
