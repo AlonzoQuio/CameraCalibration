@@ -21,43 +21,15 @@ sudo apt-get install libopencv-dev
 ```
 
 ## Tests
-```
-Realtime test using PS3 camera
-```
-[![Realtime test using PS3 camera](https://img.youtube.com/vi/fiKpNXRzBqk/0.jpg)](http://www.youtube.com/watch?v=fiKpNXRzBqk)
 
-```
-Realtime test using MS Life cam camera
-```
+**Calibration process using the PS3 and LifeCam camera**
+<iframe src="https://drive.google.com/file/d/1-6Stt6fTLUBsY4v49cVZLxBB-sPrC_EZ/preview" width="320" height="240"></iframe>
+<iframe src="https://drive.google.com/file/d/1bPcLLcuMQbmUxh6Cvmk4N40Jo71PfTUT/preview" width="320" height="240"></iframe>
 
-[![Realtime test using MS Life cam camera](https://img.youtube.com/vi/Mj2aXRs_yH8/0.jpg)](http://www.youtube.com/watch?v=Mj2aXRs_yH8)
-
-
-```
-Calibration process using the PS3 camera
-```
-[![Calibration process using the PS3 camera](https://img.youtube.com/vi/SeETo6rh8Dc/0.jpg)](http://www.youtube.com/watch?v=SeETo6rh8Dc)
-
-```
-Pattern detection over undistort video PS3
-```
-[![Pattern detection over undistort video PS3](https://img.youtube.com/vi/kJqUyMwAxqw/0.jpg)](http://www.youtube.com/watch?v=kJqUyMwAxqw)
-
-```
-Calibration process using the Lifecam camera
-```
-[![Calibration process using the Lifecam camera](https://img.youtube.com/vi/3aO17O0WskU/0.jpg)](http://www.youtube.com/watch?v=3aO17O0WskU)
-
-```
-Pattern detection over undistort video Lifecam
-```
-[![Pattern detection over undistort video Lifecam](https://img.youtube.com/vi/G8c-f89xj18/0.jpg)](http://www.youtube.com/watch?v=G8c-f89xj18)
-
-<iframe src="https://drive.google.com/file/d/1CZt2dUcotLgbI58_ho13pI4oI6zNAB18/preview" width="320" height="240"></iframe>
-<iframe src="https://drive.google.com/file/d/1CZt2dUcotLgbI58_ho13pI4oI6zNAB18/preview" width="320" height="240"></iframe>
-
+**Pattern detection over undistort video of PS3 and LifeCam**
+<iframe src="https://drive.google.com/file/d/1zCcGjmSh6GJETwaMNEnVtpMD_gMn_QfL/preview" width="320" height="240"></iframe>
+<iframe src="https://drive.google.com/file/d/1bcuVyZn0pAIsiBMWQGvWYgB4nIPh-vdR/preview" width="320" height="240"></iframe>
 ## Authors
 
 * **Raúl Romaní** - *Master student at UCSP*
 * **Alonzo Quio** - *Master student at UCSP*
-
