@@ -20,8 +20,8 @@ You need to have opencv intalled on your system, it can be achived using the fol
 sudo apt-get install libopencv-dev
 ```
 
-## Tests
-
+## Camera calibration tests
+### Rings pattern
 **Calibration process using the PS3 and LifeCam camera**
 <iframe src="https://drive.google.com/file/d/1-6Stt6fTLUBsY4v49cVZLxBB-sPrC_EZ/preview" width="320" height="240"></iframe>
 <iframe src="https://drive.google.com/file/d/1bPcLLcuMQbmUxh6Cvmk4N40Jo71PfTUT/preview" width="320" height="240"></iframe>
@@ -29,6 +29,15 @@ sudo apt-get install libopencv-dev
 **Pattern detection over undistort video of PS3 and LifeCam**
 <iframe src="https://drive.google.com/file/d/1zCcGjmSh6GJETwaMNEnVtpMD_gMn_QfL/preview" width="320" height="240"></iframe>
 <iframe src="https://drive.google.com/file/d/1bcuVyZn0pAIsiBMWQGvWYgB4nIPh-vdR/preview" width="320" height="240"></iframe>
+
+### Asymmetric circles pattern using PS3 and LifeCam
+<iframe src="https://drive.google.com/file/d/1KABRFlOmHyIXdY3bYYpu2HETIsErP-Dt/preview" width="320" height="240"></iframe>
+<iframe src="https://drive.google.com/file/d/1CZt2dUcotLgbI58_ho13pI4oI6zNAB18/preview" width="320" height="240"></iframe>
+
+### Chessboard pattern using PS3 and LifeCam
+<iframe src="https://drive.google.com/file/d/1xuabf458WudQq2dFGHUNBDP8WD4lJSZs/preview" width="320" height="240"></iframe>
+<iframe src="https://drive.google.com/file/d/13lU3olByIeWh2gVtupb2zufPZ2jfqeA7/preview" width="320" height="240"></iframe>
+
 ## Authors
 
 * **Raúl Romaní** - *Master student at UCSP*
