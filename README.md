@@ -42,6 +42,16 @@ sudo apt-get install libopencv-dev
 <iframe src="https://drive.google.com/file/d/1xuabf458WudQq2dFGHUNBDP8WD4lJSZs/preview" width="320" height="240"></iframe>
 <iframe src="https://drive.google.com/file/d/13lU3olByIeWh2gVtupb2zufPZ2jfqeA7/preview" width="320" height="240"></iframe>
 
+## Camera calibration iterative method
+**Calibration process using the PS3**
+<iframe src="https://drive.google.com/file/d/10mnysKsGLTYiP88S8Z-xScvVJ4TITnI1/preview" width="640" height="480"></iframe>
+
+**Calibration process using the LifeCam camera**
+<iframe src="https://drive.google.com/file/d/18J57fr_Dt0a-BeHqt0uQBm2tBMJAr8qh/preview" width="640" height="480"></iframe>
+
+## Opengl Experiments
+<iframe src="https://drive.google.com/file/d/1fbGKs7XkARdnUHcDwx6nhErDWmSSiRU4/preview" width="640" height="480"></iframe>
+
 ## Authors
 
 * **Raúl Romaní** - *Master student at UCSP*
