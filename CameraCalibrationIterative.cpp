@@ -21,7 +21,8 @@ void refine_points_prom(vector<PatternPoint> &old_points, vector<Point2f>&new_po
 void refine_points_blend(vector<PatternPoint> &old_points, vector<Point2f>&new_points);
 void refine_points_varicenter(vector<PatternPoint> &old_points, vector<Point2f>&new_points);
 
-void refine_points(vector<PatternPoint> &old_points, vector<Point2f>&new_points, int type) {
+
+void refine_points(vector<PatternPoint> &old_points, vector<Point2f> &new_points, int type) {
     switch (type) {
     case REFINE_PROM:
         refine_points_prom(old_points, new_points);
@@ -34,8 +35,13 @@ void refine_points(vector<PatternPoint> &old_points, vector<Point2f>&new_points,
         break;
     }
 }
-
-void refine_points_prom(vector<PatternPoint> &old_points, vector<Point2f>&new_points) {
+/**
+ * @brief [brief description]
+ * @details [long description]
+ *
+ * @param new_points [description]
+ */
+void refine_points_prom(vector<PatternPoint> &old_points, vector<Point2f> &new_points) {
     for (int p = 0; p < new_points.size(); p++) {
         new_points[p].x = old_points[p].x * 0.5 + new_points[p].x * 0.5;
         new_points[p].y = old_points[p].y * 0.5 + new_points[p].y * 0.5;
@@ -100,6 +106,12 @@ void refine_points_varicenter(vector<PatternPoint> &old_points, vector<Point2f>&
     }
 }
 
+/**
+ * @brief Skip f frames using a simple for,
+ *
+ * @param cap Videocapture reference
+ * @param f number of frames to be skiped
+ */
 void skip_frames(VideoCapture &cap, int f) {
     Mat frame;
     for (int i = 0; i < f; i++) {
@@ -108,6 +120,18 @@ void skip_frames(VideoCapture &cap, int f) {
     frame.release();
 }
 
+/**
+ * @brief Choose some frame to cover the screen area
+ *
+ * @param cap       Videocapture reference
+ * @param w         Width of the frame
+ * @param h         Height of the frame
+ * @param n_frames  Number of frames to be selected
+ * @param frames    Vector of frame positions selected
+ * @param n_rows    Number of rows to define quads areas
+ * @param n_columns Number of cols to define quads areas
+ * @return          True if was posible to found the required number of frames
+ */
 bool select_frames(VideoCapture &cap, int w, int h, const int n_frames, vector<int> &frames, const int n_rows, const int n_columns) {
     int width  = h;
     int height = w;
@@ -188,7 +212,7 @@ bool select_frames(VideoCapture &cap, int w, int h, const int n_frames, vector<i
             circle(m_centroids, Point2f(c_x, c_y), 1, Scalar(0, 0, 255));
             if (near_center) {
                 if ( quadBins[y_block][x_block] < max_points) {
-                    circle(m_centroids, Point2f(c_x, c_y), 6, Scalar(0, 255, 0),-1);
+                    circle(m_centroids, Point2f(c_x, c_y), 6, Scalar(0, 255, 0), -1);
 
                     //quadBinsCount[y_block][x_block] += check_elements.size();
                     frames.push_back(f + 1);
@@ -257,6 +281,15 @@ bool select_frames(VideoCapture &cap, int w, int h, const int n_frames, vector<i
     return true;
 }
 
+/**
+ * @brief Run camera calibration with the positions in the set_points vector
+ *
+ * @param w             Width of the frame
+ * @param h             Height of the frame
+ * @param set_points    Set of points to perform the calibration
+ * @param camera_matrix Camera matrix result of the calibration
+ * @param dist_coeffs   Distortion coefficients result of the calibration
+ */
 void calibrate_camera(int w, int h, vector<vector<Point2f>> &set_points, Mat & camera_matrix, Mat & dist_coeffs) {
     Size imageSize(h, w);
     float rms = calibrate_with_points(imageSize, camera_matrix, dist_coeffs, set_points);
@@ -267,7 +300,16 @@ void calibrate_camera(int w, int h, vector<vector<Point2f>> &set_points, Mat & c
     cout << set_points.size() << "\t" << rms << "\t" << fx << "\t" << fy << "\t" << cx << "\t" << cy << "\t" << avgColinearDistance(set_points);
 }
 
-bool undistort_image(Mat & frame, int w, int h, const Mat camera_matrix, const Mat dist_coeffs) {
+/**
+ * @brief Remove the distortion of the image, the result its only for visualization pourposes
+ *
+ * @param frame         Video frame
+ * @param w             Width of the frame
+ * @param h             Height of the frame
+ * @param camera_matrix Camera matrix
+ * @param dist_coeffs   Distortion coefficients
+ */
+void undistort_image(Mat & frame, int w, int h, const Mat camera_matrix, const Mat dist_coeffs) {
     Mat rview, map1, map2;
     Size imageSize(h, w);
     initUndistortRectifyMap(camera_matrix,
@@ -284,10 +326,17 @@ bool undistort_image(Mat & frame, int w, int h, const Mat camera_matrix, const M
     rview.release();
     map1.release();
     map2.release();
-    return true;
 }
 
-bool collect_points(VideoCapture & cap, int w, int h, const vector<int> &frames, vector<vector<Point2f>> &set_points) {
+/**
+ * @brief Search pattern points of choosen frames and save the points in the set_points array
+ * 
+ * @param cap           VideoCapture reference
+ * @param w             Width of the frame
+ * @param h             Height of the frame
+ * @param set_points    Set of points to use in the camera calibration
+ */
+void collect_points(VideoCapture & cap, int w, int h, const vector<int> &frames, vector<vector<Point2f>> &set_points) {
     Mat frame;
     for (int f = 0; f < frames.size(); f++) {
         cap.set(CAP_PROP_POS_FRAMES, frames[f]);
@@ -300,23 +349,28 @@ bool collect_points(VideoCapture & cap, int w, int h, const vector<int> &frames,
             }
             set_points.push_back(temp);
         }
-        //imshow("FrontoParallel",frame);
-        //waitKey(0);
     }
     frame.release();
-    return true;
 }
 
-void distortPoints(const vector<cv::Point2f> &xy, vector<cv::Point2f> &uv, const cv::Mat & K, const cv::Mat & d) {
-    double fx = K.at<double>(0, 0);
-    double fy = K.at<double>(1, 1);
-    double cx = K.at<double>(0, 2);
-    double cy = K.at<double>(1, 2);
-    double k1 = d.at<double>(0, 0);
-    double k2 = d.at<double>(0, 1);
-    double p1 = d.at<double>(0, 2);
-    double p2 = d.at<double>(0, 3);
-    double k3 = d.at<double>(0, 4);
+/**
+ * @brief Add the distortion to the points
+ * 
+ * @param xy            Undistorted points
+ * @param uv            Distorted points
+ * @param camera_matrix Camera matrix
+ * @param dist_coeffs   Distortion coefficients
+ */
+void distortPoints(const vector<Point2f> &xy, vector<Point2f> &uv, const Mat & camera_matrix, const Mat & dist_coeffs) {
+    double fx = camera_matrix.at<double>(0, 0);
+    double fy = camera_matrix.at<double>(1, 1);
+    double cx = camera_matrix.at<double>(0, 2);
+    double cy = camera_matrix.at<double>(1, 2);
+    double k1 = dist_coeffs.at<double>(0, 0);
+    double k2 = dist_coeffs.at<double>(0, 1);
+    double p1 = dist_coeffs.at<double>(0, 2);
+    double p2 = dist_coeffs.at<double>(0, 3);
+    double k3 = dist_coeffs.at<double>(0, 4);
 
     double x;
     double y;
@@ -343,6 +397,20 @@ void distortPoints(const vector<cv::Point2f> &xy, vector<cv::Point2f> &uv, const
     }
 }
 
+/**
+ * @brief Search pattern points in the undistorted image, find a homography
+ * to get a cannonical view, find patter points in the cannonical view and 
+ * refine points and save the points in the set_points array
+ * @details [long description]
+ * 
+ * @param cap           VideoCapture reference
+ * @param w             Width of the frame
+ * @param h             Height of the frame
+ * @param set_points    Set of points to use in the camera calibration
+ * @param camera_matrix Camera matrix
+ * @param dist_coeffs   Distortion coefficients
+ * @param refine_type   Tipe of refinement in every iteration
+ */
 void collect_points_fronto_parallel(VideoCapture & cap, int w, int h, const vector<int> &frames, vector<vector<Point2f>> &original_set_points, vector<vector<Point2f>> &set_points, const Mat & camera_matrix, const Mat & dist_coeffs, int refine_type) {
     Size imageSize(h, w);
     Size boardSize(5, 4);
@@ -450,12 +518,23 @@ void collect_points_fronto_parallel(VideoCapture & cap, int w, int h, const vect
         img_out.release();
         homography.release();
         inv_homography.release();
-        waitKey(0);
+        waitKey(1);
     }
     cout << "\t" << avgColinearDistance(start_set_points);
     cout << "\t" << avgColinearDistance(new_set_points) << endl;
 }
 
+/**
+ * @brief Find patter points in the frame
+ * 
+ * @param frame             Video frame
+ * @param output            Frame output with the pattern detection
+ * @param w                 Width of the frame
+ * @param h                 Height of the frame
+ * @param pattern_points    Pattern points found in the frame
+ * @param debug             If debug in enabled show the step by step process of detection
+ * @return                  True if we found all the 20 points
+ */
 bool find_points_in_frame(Mat & frame, Mat & output, int w, int h, vector<PatternPoint> &pattern_points, bool debug) {
     //clean_using_mask(frame, w, h, mask_points);
     Mat masked, frame_gray, thresh;
@@ -469,21 +548,30 @@ bool find_points_in_frame(Mat & frame, Mat & output, int w, int h, vector<Patter
     int detected_points = find_pattern_points(frame_gray, masked, output, w, h, mask_points, pattern_points, keep_per_frames);
     if (debug) imshow("Masked", masked);
     if (debug) imshow("Original", output);
-    if (detected_points != 20) {
-        //waitKey(0);
-    }
     masked.release();
-    //output.release();
     frame_gray.release();
     thresh.release();
     return detected_points == 20;
 }
 
+/**
+ * @brief Find patter points in the frame
+ * 
+ * @param frame             Video frame
+ * @param w                 Width of the frame
+ * @param h                 Height of the frame
+ * @param pattern_points    Pattern points found in the frame
+ * @param debug             If debug in enabled show the step by step process of detection
+ * @return                  True if we found all the 20 points
+ */
 bool find_points_in_frame(Mat & frame, int w, int h, vector<PatternPoint> &pattern_points, bool debug) {
     Mat output = frame.clone();
     return find_points_in_frame(frame, output, w, h, pattern_points, debug);
 }
 
+/**
+ * @brief Initialize windows names, sizes and positions.
+ */
 void window_setup() {
     //int window_w = 360 * 1.25;
     //int window_h = 240 * 1.25;
