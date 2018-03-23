@@ -35,12 +35,7 @@ void refine_points(vector<PatternPoint> &old_points, vector<Point2f> &new_points
         break;
     }
 }
-/**
- * @brief [brief description]
- * @details [long description]
- *
- * @param new_points [description]
- */
+
 void refine_points_prom(vector<PatternPoint> &old_points, vector<Point2f> &new_points) {
     for (int p = 0; p < new_points.size(); p++) {
         new_points[p].x = old_points[p].x * 0.5 + new_points[p].x * 0.5;
@@ -78,32 +73,7 @@ void refine_points_blend(vector<PatternPoint> &old_points, vector<Point2f>&new_p
 }
 
 void refine_points_varicenter(vector<PatternPoint> &old_points, vector<Point2f>&new_points) {
-    vector<Point2f> points(5);
-    Vec4f line;
-    float factor;
-    float d_old;
-    float d_new;
-    for (int row = 0; row < 4; row++) {
-        for (int c = 0; c < 5; c++) {
-            points[c] = new_points[row * 5 + c];
-        }
-        fitLine(points, line, CV_DIST_L2,  0, 0.01, 0.01);
-        Point2f p1;
-        Point2f p2;
-        p1.x = line[2];
-        p1.y = line[3];
-
-        p2.x = p1.x + new_points[row * 5 + 4].x * line[0];
-        p2.y = p1.y + new_points[row * 5 + 4].x * line[1];
-
-        for (int c = 0; c < 5; c++) {
-            d_old = distance_to_rect(p1, p2, old_points[row * 5 + c].to_point2f());
-            d_new = distance_to_rect(p1, p2, new_points[row * 5 + c]);
-            factor = d_old / (d_old + d_new);
-            new_points[row * 5 + c].x = old_points[row * 5 + c].x * (1 - factor) + new_points[row * 5 + c].x * factor;
-            new_points[row * 5 + c].y = old_points[row * 5 + c].y * (1 - factor) + new_points[row * 5 + c].y * factor;
-        }
-    }
+    // TO DO
 }
 
 /**
@@ -132,15 +102,18 @@ void skip_frames(VideoCapture &cap, int f) {
  * @param n_columns Number of cols to define quads areas
  * @return          True if was posible to found the required number of frames
  */
-bool select_frames(VideoCapture &cap, int w, int h, const int n_frames, vector<int> &frames, const int n_rows, const int n_columns) {
+bool select_frames_process(VideoCapture &cap, int w, int h, const int n_frames, vector<int> &frames, const int n_rows, const int n_columns,Mat &m_calibration,Mat &m_centroids) {
+    cap.set(CAP_PROP_POS_FRAMES, 1);
     int width  = h;
     int height = w;
     int blockSize_y = height / n_rows;
     int blockSize_x = width  / n_columns;
     int f = 0;
     Mat frame;
-    Mat m_calibration = Mat::zeros(Size(h, w), CV_8UC3);
-    Mat m_centroids = Mat::zeros(Size(h, w), CV_8UC3);
+    //Mat m_calibration = Mat::zeros(Size(h, w), CV_8UC3);
+    //Mat m_centroids = Mat::zeros(Size(h, w), CV_8UC3);
+    int on_success_skip = 29;
+    int on_overflow_skip = 9;
 
     int num_color_palette = 100;
     vector<Scalar> color_palette(num_color_palette);
@@ -156,7 +129,9 @@ bool select_frames(VideoCapture &cap, int w, int h, const int n_frames, vector<i
         }
     }
 
+    //int selected_frames = frames.size();
     int selected_frames = 0;
+    cout << "Start selection with " << selected_frames << " of " << n_frames << endl;
     //int max_points = ceil((n_frames * 1.0) / ((n_rows-0.5) * (n_columns-0.5)));
     //int max_points = round((n_frames + 4.0) / ((n_rows) * (n_columns) - n_columns));
     int max_points = round((n_frames + 4.0) / ((n_rows) * (n_columns)));
@@ -175,7 +150,7 @@ bool select_frames(VideoCapture &cap, int w, int h, const int n_frames, vector<i
 
         if (!cap.read(frame)) {
             cout << "FinishVideo at frame " << f << endl;
-            return false;
+            break;//return false;
         }
         if (find_points_in_frame(frame, frame, w, h, pattern_points, false)) {
 
@@ -222,8 +197,8 @@ bool select_frames(VideoCapture &cap, int w, int h, const int n_frames, vector<i
                     //imwrite("Frame"+to_string(f)+".png",frame);
                     selected_frames++;
                     //cout << "Selected frames " << selected_frames << " from " << n_frames << endl;
-                    skip_frames(cap, 29);
-                    f += 29;
+                    skip_frames(cap, on_success_skip);
+                    f += on_success_skip;
 
                     //DRAW QUADS
                     //for (int y_block = 0; y_block < n_rows; ++y_block)
@@ -238,8 +213,8 @@ bool select_frames(VideoCapture &cap, int w, int h, const int n_frames, vector<i
                     //}
                 }
                 else {
-                    skip_frames(cap, 9);
-                    f += 9;
+                    skip_frames(cap, on_overflow_skip);
+                    f += on_overflow_skip;
                 }
             }
 
@@ -278,7 +253,35 @@ bool select_frames(VideoCapture &cap, int w, int h, const int n_frames, vector<i
         //skip_frames(cap,1);
         waitKey(1);
     }
-    return true;
+    cout << "Finish selection with " << selected_frames << " of " << n_frames << endl;
+    return selected_frames == n_frames;
+}
+/**
+ * @brief Run the selection frames process
+ * 
+ * @param cap       Videocapture reference
+ * @param w         Width of the frame
+ * @param h         Height of the frame
+ * @param n_frames  Number of frames to be selected
+ * @param frames    Vector of frame positions selected
+ * @param n_rows    Number of rows to define quads areas
+ * @param n_columns Number of cols to define quads areas
+ * @return          True if was posible to found the required number of frames
+ */
+bool select_frames(VideoCapture &cap, int w, int h, const int n_frames, vector<int> &frames, const int n_rows, const int n_columns) {
+    int rows = n_rows;
+    int cols = n_columns;
+    int select_frames = n_frames;
+    Mat m_calibration = Mat::zeros(Size(h, w), CV_8UC3);
+    Mat m_centroids = Mat::zeros(Size(h, w), CV_8UC3);
+    while (!select_frames_process(cap, w, h, select_frames, frames, rows, cols,m_calibration,m_centroids)) {
+        rows --;
+        cols --;
+        select_frames = n_frames - frames.size();
+        if (rows < 1 || cols < 1) {
+            break;
+        }
+    }
 }
 
 /**
