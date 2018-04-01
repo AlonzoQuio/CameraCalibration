@@ -34,5 +34,15 @@ float calibrate_with_points(Size &imageSize, Mat &cameraMatrix, Mat &distCoeffs,
 	                             rvecs,
 	                             tvecs/*,
 	                             CV_CALIB_ZERO_TANGENT_DIST*/);
+	/*cout << "rvecs" << endl;
+	for (int r = 0; r < imagePoints.size(); r++) {
+		cout << "rvecs " << r << endl;
+		cout << rvecs[r] << endl;
+	}
+	cout << "tvecs" << endl;
+	for (int r = 0; r < imagePoints.size(); r++) {
+		cout << "tvecs " << r << endl;
+		cout << tvecs[r] << endl;
+	}*/
 	return rms;
 }
