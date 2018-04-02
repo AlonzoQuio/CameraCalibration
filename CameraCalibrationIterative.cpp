@@ -180,7 +180,7 @@ bool select_frames_process(VideoCapture &cap, int w, int h, const int n_frames, 
                         float yaw = eulerAngles[1];
                         float pitch = eulerAngles[0];
                         float roll = eulerAngles[2];
-                        if (!(yaw > -20 && yaw < 20 && roll > -20 && roll < 20 && (pitch > 150 || pitch < -150))) {
+                        if (!(yaw > -20 && yaw < 20 && roll > -30 && roll < 30 && (pitch > 150 || pitch < -150))) {
                             rejected = true;
                         }
                     }
