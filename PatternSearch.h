@@ -6,6 +6,8 @@
 using namespace cv;
 using namespace std;
 
+#define flag_masa 1
+
 void order_points_and_track(Mat &out, vector<PatternPoint> &pattern_centers, vector<PatternPoint> new_pattern_points);
 void update_mask_from_points(vector<PatternPoint> points, int w, int h, Point mask_point[][4]);
 int mode_from_father(vector<PatternPoint> pattern_points);
@@ -16,7 +18,9 @@ vector<PatternPoint> more_distant_points(vector<PatternPoint>points);
 float avgColinearDistance(vector<PatternPoint> &points);
 float avgColinearDistance(vector<Point2f> &points);
 float avgColinearDistance_old(vector<Point2f> &points);
+
 //float avgColinearDistance(vector<vector<>> &points);
+
 
 /**
  * @details Function to support PatternPoint sort by hierarchy
@@ -115,7 +119,15 @@ int find_pattern_points(Mat &src_gray, Mat &masked, Mat&original, int w, int h, 
                     radio_hijo = (elipseHijo.size.height + elipseHijo.size.width) / 4;
                     /* Check center proximity */
                     if ( /*radio <= radio_hijo * 2 &&*/ cv::norm(elipse.center - elipseHijo.center) < radio_hijo / 2) {
-                        ellipses_temp.push_back(PatternPoint((elipse.center.x + elipseHijo.center.x ) / 2,
+                        if (flag_masa){
+                        	auto mu_son = moments(contours[hijo]);
+							auto mu_dad = moments(contours[c]);
+							float x = (mu_son.m10/mu_son.m00+mu_dad.m10/mu_dad.m00)/2.0;
+							float y = (mu_son.m01/mu_son.m00+mu_dad.m01/mu_dad.m00)/2.0;
+							ellipses_temp.push_back(PatternPoint(x,y,radio,hierarchy[c][3]));
+                        }
+                        else
+                        	ellipses_temp.push_back(PatternPoint((elipse.center.x + elipseHijo.center.x ) / 2,
                                                              (elipse.center.y + elipseHijo.center.y ) / 2,
                                                              radio,
                                                              hierarchy[c][3]));
