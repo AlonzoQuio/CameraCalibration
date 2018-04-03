@@ -56,3 +56,4 @@ sudo apt-get install libopencv-dev
 
 * **Raúl Romaní** - *Master student at UCSP*
 * **Alonzo Quio** - *Master student at UCSP*
+* **Jose Jaita**  - *Master student at UCSP*
