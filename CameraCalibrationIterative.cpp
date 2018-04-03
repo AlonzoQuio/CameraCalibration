@@ -12,19 +12,23 @@ using namespace std;
 #define CALIBRATION_PS3_VIDEO     "/home/alonzo/Documents/avance4_videos/ps3_rings.webm"
 #define CALIBRATION_LIFECAM_VIDEO     "/home/alonzo/Documents/avance4_videos/lifecam_rings.webm"
 
-#define REFINE_PROM       0
+#define REFINE_AVG       0
 #define REFINE_BLEND      1
 #define REFINE_VARICENTER 2
+#define REFINE_NONE 3
+#define REFINE_FP 4
+#define REFINE_FP_IDEAL 5
+#define REFINE_FP_INTERSECTION 6
 
 bool find_points_in_frame(Mat &frame, Mat &output, int w, int h, vector<PatternPoint> &pattern_points, bool debug);
 bool find_points_in_frame(Mat &frame, int w, int h, vector<PatternPoint> &pattern_points, bool debug);
-void refine_points_prom(vector<PatternPoint> &old_points, vector<Point2f>&new_points);
+void refine_points_avg(vector<PatternPoint> &old_points, vector<Point2f>&new_points);
 void refine_points_blend(vector<PatternPoint> &old_points, vector<Point2f>&new_points);
 void refine_points_varicenter(vector<PatternPoint> &old_points, vector<Point2f>&new_points);
 
-/** 
+/**
  * @brief Finds the intersection of two lines, or returns false. The lines are defined by (o1, p1) and (o2, p2).
- * 
+ *
  * @param o1 Origin for rect 1
  * @param p1 Direction of rect 1
  * @param o2 Origin for rect 2
@@ -49,7 +53,7 @@ bool intersection(Point2f o1, Point2f p1, Point2f o2, Point2f p2, Point2f &r) {
 
 /**
  * @brief Calculate the intersection point for the position x, y
- * 
+ *
  * @param x Row
  * @param y Column
  * @param new_points Points
@@ -94,11 +98,17 @@ Point2f getIntersectionPoint(int x, int y, vector<Point2f>& new_points) {
 	intersection(p1, p2, p1_2, p2_2, intersec);
 	return intersec;
 }
-
+/**
+ * @brief Refine points using the type method
+ * 
+ * @param old_points Initial set of points
+ * @param new_points Actual set of points
+ * @param type Method used to refine the points
+ */
 void refine_points(vector<PatternPoint> &old_points, vector<Point2f> &new_points, int type) {
 	switch (type) {
-	case REFINE_PROM:
-		refine_points_prom(old_points, new_points);
+	case REFINE_AVG:
+		refine_points_avg(old_points, new_points);
 		break;
 	case REFINE_BLEND:
 		refine_points_blend(old_points, new_points);
@@ -108,14 +118,24 @@ void refine_points(vector<PatternPoint> &old_points, vector<Point2f> &new_points
 		break;
 	}
 }
-
-void refine_points_prom(vector<PatternPoint> &old_points, vector<Point2f> &new_points) {
+/**
+ * @brief Refine points using the average of old and new point (o+n)/2
+ * 
+ * @param old_points Initial points
+ * @param new_points Actual points
+ */
+void refine_points_avg(vector<PatternPoint> &old_points, vector<Point2f> &new_points) {
 	for (int p = 0; p < new_points.size(); p++) {
 		new_points[p].x = old_points[p].x * 0.5 + new_points[p].x * 0.5;
 		new_points[p].y = old_points[p].y * 0.5 + new_points[p].y * 0.5;
 	}
 }
-
+/**
+ * @brief Refine points using a blend factor inversely proportional to the distance to the fit line
+ * 
+ * @param old_points Initial points
+ * @param new_points Actual points
+ */
 void refine_points_blend(vector<PatternPoint> &old_points, vector<Point2f>&new_points) {
 	vector<Point2f> points(5);
 	Vec4f line;
@@ -144,7 +164,12 @@ void refine_points_blend(vector<PatternPoint> &old_points, vector<Point2f>&new_p
 		}
 	}
 }
-
+/**
+ * @brief Refine points using the (old + new + intersection point of fit lines (horizontal and vertical) )/3
+ * 
+ * @param old_points Initial points
+ * @param new_points Actual points
+ */
 void refine_points_varicenter(vector<PatternPoint> &old_points, vector<Point2f>& new_points) {
 	for (int y = 0; y < 4; ++y) {
 		for (int x = 0; x < 5; ++x) {
@@ -153,6 +178,21 @@ void refine_points_varicenter(vector<PatternPoint> &old_points, vector<Point2f>&
 			new_points[offset].x = (old_points[offset].to_point2f().x + new_points[offset].x  + insectionPoint.x) / 3;
 			new_points[offset].y = (old_points[offset].to_point2f().y + new_points[offset].y  + insectionPoint.y) / 3;
 
+		}
+	}
+}
+/**
+ * @brief Refine points using only the intersection point of fit lines (horizontal and vertical)
+ * 
+ * @param new_points Intersection point for each position
+ */
+void refine_points_intersection(vector<Point2f>& new_points) {
+	for (int y = 0; y < 4; ++y) {
+		for (int x = 0; x < 5; ++x) {
+			int offset = y * 5 + x;
+			Point2f insectionPoint = getIntersectionPoint(x, y, new_points );
+			new_points[offset].x = insectionPoint.x;
+			new_points[offset].y = insectionPoint.y;
 		}
 	}
 }
@@ -484,7 +524,7 @@ void distortPoints(const vector<Point2f> &xy, vector<Point2f> &uv, const Mat & c
  * @param dist_coeffs   Distortion coefficients
  * @param refine_type   Tipe of refinement in every iteration
  */
-void collect_points_fronto_parallel(VideoCapture & cap, int w, int h, const vector<int> &frames, vector<vector<Point2f>> &original_set_points, vector<vector<Point2f>> &set_points, const Mat & camera_matrix, const Mat & dist_coeffs, int refine_type) {
+void collect_points_fronto_parallel(VideoCapture & cap, int w, int h, const vector<int> &frames, vector<vector<Point2f>> &original_set_points, vector<vector<Point2f>> &set_points, const Mat & camera_matrix, const Mat & dist_coeffs, int refine_type, int refine_fronto_parallel_type) {
 	Size imageSize(h, w);
 	Size boardSize(5, 4);
 	int n_points = 20;
@@ -553,10 +593,20 @@ void collect_points_fronto_parallel(VideoCapture & cap, int w, int h, const vect
 			}
 
 			vector<Point2f> object_p_canonical;
-			for (int p = 0; p < 20; p++) {
-				//object_p_canonical.push_back(Point2f((points_fronto_parallel[p].x+points_real[p].x)/2.0,
-				//									 (points_fronto_parallel[p].y+points_real[p].y)/2.0));
-				object_p_canonical.push_back(points_fronto_parallel[p].to_point2f());
+			if (refine_fronto_parallel_type == REFINE_FP_IDEAL) {
+				for (int p = 0; p < 20; p++) {
+					object_p_canonical.push_back(Point2f((points_fronto_parallel[p].x + points_real[p].x) / 2.0,
+					                                     (points_fronto_parallel[p].y + points_real[p].y) / 2.0));
+				}
+			} else if (refine_fronto_parallel_type == REFINE_FP_INTERSECTION) {
+				for (int p = 0; p < 20; p++) {
+					object_p_canonical.push_back(points_fronto_parallel[p].to_point2f());
+				}
+				refine_points_intersection(object_p_canonical);
+			} else {
+				for (int p = 0; p < 20; p++) {
+					object_p_canonical.push_back(points_fronto_parallel[p].to_point2f());
+				}
 			}
 			vector<Point2f> new_points2D(n_points);
 
@@ -684,7 +734,6 @@ void window_setup() {
 	resizeWindow(window_name, window_w, window_h);
 	moveWindow(window_name, window_w * 2 + second_screen_offset, window_h + 60);
 }
-
 int main( int argc, char** argv ) {
 	int num_color_palette = 100;
 	vector<Scalar> color_palette(num_color_palette);
@@ -704,12 +753,9 @@ int main( int argc, char** argv ) {
 	cap.read(frame);
 	int w = frame.rows;
 	int h = frame.cols;
-	// Lifecam
 	int n_rows = 3;
 	int n_columns = 4;
-	// PS3
-	//n_rows = 3;
-	//n_columns = 4;
+
 	vector<int> frames;
 	vector<vector<Point2f>> set_points;
 	vector<vector<Point2f>> original_set_points;
@@ -723,14 +769,13 @@ int main( int argc, char** argv ) {
 
 	// Use initial calibration to reject frames with high rotation
 	select_frames(cap, w, h, frames_to_select, frames, n_rows, n_columns, camera_matrix, dist_coeffs);
+	//load_frames(frames_to_select, frames);
 	collect_points(cap, w, h, frames, original_set_points);
 	calibrate_camera(w, h, original_set_points, camera_matrix, dist_coeffs);
 
 	int n_iterations = 6;
 	for (int i = 0; i < n_iterations; i++) {
-		collect_points_fronto_parallel(cap, w, h, frames, original_set_points, set_points, camera_matrix, dist_coeffs, REFINE_VARICENTER);
-		//collect_points_fronto_parallel(cap, w, h, frames, original_set_points, set_points, camera_matrix, dist_coeffs, REFINE_BLEND);
-		//collect_points_fronto_parallel(cap, w, h, frames, original_set_points, set_points, camera_matrix, dist_coeffs, REFINE_PROM);
+		collect_points_fronto_parallel(cap, w, h, frames, original_set_points, set_points, camera_matrix, dist_coeffs, REFINE_VARICENTER, REFINE_FP_INTERSECTION);
 		calibrate_camera(w, h, set_points, camera_matrix, dist_coeffs);
 	}
 	cout << endl;
