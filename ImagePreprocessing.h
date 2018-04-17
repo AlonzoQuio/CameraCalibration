@@ -6,14 +6,6 @@ using namespace cv;
 using namespace std;
 
 /**
- * @details Class to retrive a rgb pixel from Mat
- */
-struct MatPixel {
-    uchar b;
-    uchar g;
-    uchar r;
-};
-/**
  * @details filter points outside from the mask
  * 
  * @param imagen image input and output
@@ -31,12 +23,12 @@ void clean_using_mask(Mat &imagen, int width, int height, Point mask_points[][4]
 
     for (int w = 0; w < width; w++) {
         for (int h = 0; h < height; h++) {
-            MatPixel& pixel = imagen.at<MatPixel>(w, h);
-            MatPixel& mask_value = mask.at<MatPixel>(w, h);
-            if(mask_value.r != 255){
-                pixel.r = 0;
-                pixel.g = 0;
-                pixel.b = 0;
+            Vec3b& pixel = imagen.at<Vec3b>(w, h);
+            Vec3b& mask_value = mask.at<Vec3b>(w, h);
+            if(mask_value[2] != 255){
+                pixel[0] = 0;
+                pixel[1] = 0;
+                pixel[2] = 0;
             }
         }
     }
