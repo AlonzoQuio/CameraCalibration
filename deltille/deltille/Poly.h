@@ -26,8 +26,8 @@
 #ifndef INCLUDE_CHECKERBOARD_DETECTOR_POLYNOMIALSADDLEDETECTORCONTEXT_H_
 #define INCLUDE_CHECKERBOARD_DETECTOR_POLYNOMIALSADDLEDETECTORCONTEXT_H_
 
-#include "DetectorTools.h"
-#include "PolynomialFit.h"
+#include <deltille/DetectorTools.h>
+#include <deltille/PolynomialFit.h>
 
 #include <chrono>
 #include <cmath>
@@ -72,16 +72,13 @@ public:
     num_iterations = SaddlePointType::isTriangular ? 5 : 20;
   }
 
-
   int findSaddles(std::vector<SaddlePointType> &refclust) {
-
 #ifdef DEBUG_TIMING
     auto t0 = high_resolution_clock::now();
 #endif
     std::vector<cv::Point> locations;
 
     getInitialSaddleLocations(input_lowres, locations);
-
 #ifdef DEBUG_TIMING
     auto t1 = high_resolution_clock::now();
     printf("Preprocessing took: %.3f ms\n",
@@ -91,9 +88,6 @@ public:
     lowresFitting.saddleSubpixelRefinement(lowres, locations, refined,
                                            num_iterations, true);
 
-    //drawPoints(full,refined,cv::Scalar(0,0,255));
-    //cv::imshow("",full);
-    //cv::waitKey(0);
     if (!SaddlePointType::isTriangular) {
       // early prefilter outliers
       double smax = -DBL_MAX;
@@ -245,7 +239,7 @@ public:
     return 0;
   }
 
-public:
+private:
   void stretchIntensities(cv::InputArray input, cv::OutputArray output) {
     // build a lookup table mapping the pixel values [0, 255] to
     // their adjusted gamma values
@@ -293,23 +287,14 @@ public:
                                  std::vector<cv::Point> &locations) {
     cv::Mat gauss_img;
     input.convertTo(gauss_img, cv::DataType<FloatImageType>::depth);
-    //gauss_img = input;
-    cv::GaussianBlur(gauss_img, gauss_img, cv::Size(7,7), 1.5,1.5);
-    
-    // cv::adaptiveThreshold(gauss_img, gauss_img , 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV, 45, 15);
 
+    cv::GaussianBlur(gauss_img, gauss_img, cv::Size(7, 7), 1.5, 1.5);
     cv::Mat hessian_img;
-    
-
     hessianResponse(gauss_img, hessian_img);
-    //Canny(gauss_img, hessian_img, 50, 80);
-
     double mn = 0, mx = 0;
     cv::minMaxIdx(hessian_img, &mn, &mx, NULL, NULL);
-    cv::Mat mask = hessian_img < mn * detector_params.hessian_factor_threshold;
-    //cout << mask.size() << endl;
+    cv::Mat mask = hessian_img < mn * 0.01;
     cv::dilate(mask, mask, cv::Mat());
-    
     // remove saddles around the border
     for (int i = 0; i < 2; i++) {
       mask.row(i) = cv::Scalar::all(0);
@@ -317,8 +302,6 @@ public:
       mask.col(i) = cv::Scalar::all(0);
       mask.col(mask.cols - 1 - i) = cv::Scalar::all(0);
     }
-    //cv::imshow("",mask);
-    //cv::waitKey(0);
     // get locations and sort them by y and then x
     cv::Mat locs;
     cv::findNonZero(mask, locs);

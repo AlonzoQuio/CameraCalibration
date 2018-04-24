@@ -22,7 +22,7 @@
  *  Created on: Dec 1, 2016
  *      Author: mperdoch
  */
-
+#pragma once
 #ifndef INCLUDE_CHECKERBOARD_DETECTOR_GRIDDETECTORCONTEXT_H_
 #define INCLUDE_CHECKERBOARD_DETECTOR_GRIDDETECTORCONTEXT_H_
 
@@ -72,7 +72,6 @@ public:
     width = input.cols;
     height = input.rows;
     deltilleGrid = SaddlePointType::isTriangular;
-
   }
 
   template <typename UnaryPredicateOnIndex>
@@ -435,7 +434,6 @@ public:
 
       // get best two candidates for of diagonal points, check homogeneity
       std::vector<double> mean(candidates.size());
-
       int good = 0;
       for (size_t j = 0; j < candidates.size(); ++j)
         if (checkTriangleConsistency(pts[i00], i00, i11, candidates[j],
@@ -445,8 +443,6 @@ public:
         }
 
       // triangles need to be homogeneous and different enough from each other
-    cout << good << endl;
-      
       if (good == 2 &&
           fabs(mean[0] - mean[1]) >=
               detector_params.triangle_consistency_threshold) {
@@ -894,12 +890,12 @@ public:
       bool have_quad = deltilleGrid ? initialDeltilleQuadSelection(idxs, axis)
                                     : initialQuadSelection(keypoints, axis);
 
-      
       if (!have_quad)
         continue;
 
       if (!axis.empty())
         trial++;
+
       for (size_t k = 0; k < axis.size(); ++k) {
         std::vector<CoordIndex> coords;
         std::vector<bool> visited(num_pts, false);
@@ -936,6 +932,7 @@ public:
           if (!grown)
             break;
         }
+
 #ifdef DEBUG_INDEXING
 // std::cout << "Final IDX map:" << std::endl << idxmap << std::endl;
 #endif
@@ -992,7 +989,6 @@ public:
       auto t3 = high_resolution_clock::now();
 #endif
       findBestGrid(board_size, obs.board);
-      cout << obs.corner_locations.size() << endl;
       obs.indexed = false;
       // squeeze all corner locations on this board...
       std::vector<cv::Point2f> &corners = obs.corner_locations;

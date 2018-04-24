@@ -35,7 +35,7 @@
 #include <complex>
 #include <iostream>
 
-using namespace std;
+using namespace std::chrono;
 
 namespace orp {
 namespace calibration {
@@ -72,7 +72,7 @@ public:
                                 const PolarityStorageType *p2, uint8_t &same,
                                 uint8_t &diff) {
     const double rectangular_polarity_threshold =
-        cos(orp::calibration::detector_params.rectangle_polarity_angle_threshold);
+        cos(detector_params.rectangle_polarity_angle_threshold);
     double cost1 = fabs(p1[PolaritySine1] * p2[PolaritySine2] +
                         p1[PolarityCosine1] * p2[PolarityCosine2]);
     double cost2 = fabs(p1[PolaritySine1] * p2[PolaritySine1] +
@@ -154,7 +154,7 @@ public:
                                 const PolarityStorageType *p2, uint8_t &same,
                                 uint8_t &dummy) {
     const double triangle_polarity_threshold =
-        cos(10.0 / 180 * M_PI); // cos(orp::calibration::detector_params.triangle_polarity_angle);
+        cos(10.0 / 180 * M_PI); // cos(detector_params.triangle_polarity_angle);
 
     PolarityStorageType cost1 = p1[PolaritySine1] * p2[PolaritySine1] +
                                 p1[PolarityCosine1] * p2[PolarityCosine1];
@@ -174,7 +174,7 @@ public:
                                      const PolarityStorageType *p2, int id1,
                                      int id2, double dx, double dy) {
     // const double triangle_polarity_threshold = cos(10.0/180*M_PI);
-    // //cos(orp::calibration::detector_params.triangle_polarity_angle);
+    // //cos(detector_params.triangle_polarity_angle);
 
     PolarityStorageType cost1 = p1[PolaritySine1] * p2[PolaritySine1] +
                                 p1[PolarityCosine1] * p2[PolarityCosine1];
@@ -250,7 +250,7 @@ public:
                                              const PolarityStorageType *p2,
                                              int rotation) {
     const double triangle_polarity_threshold =
-        cos(10.0 / 180 * M_PI); // cos(orp::calibration::detector_params.triangle_polarity_angle);
+        cos(10.0 / 180 * M_PI); // cos(detector_params.triangle_polarity_angle);
     return std::abs(p1[0].dot(p2[rotation])) > triangle_polarity_threshold &&
            std::abs(p1[1].dot(p2[(rotation + 1) % 3])) >
                triangle_polarity_threshold &&
@@ -446,8 +446,8 @@ template <typename SaddlePointType> struct PolynomialFit {
           pt.x += dx;
           pt.y += dy;
 
-          if (orp::calibration::detector_params.spatial_convergence_threshold > fabs(dx) &&
-              orp::calibration::detector_params.spatial_convergence_threshold > fabs(dy)) {
+          if (detector_params.spatial_convergence_threshold > fabs(dx) &&
+              detector_params.spatial_convergence_threshold > fabs(dy)) {
             double k4mk5 = r[1] - r[0];
             pt.s = sqrt(r[2] * r[2] + k4mk5 * k4mk5);
             pt.a1 = atan2(-r[2], k4mk5) / 2.0;
@@ -479,6 +479,7 @@ template <typename SaddlePointType> struct PolynomialFit {
                                 int max_iterations = 10,
                                 bool tight_convergence = true) {
     cv::Mat b(invAtAAt.cols, 1, CV_64FC1);
+
     refined.resize(initial.size());
     for (size_t idx = 0; idx < initial.size(); idx++)
       refined[idx] = MonkeySaddlePointType(initial[idx].x, initial[idx].y);
@@ -497,9 +498,7 @@ template <typename SaddlePointType> struct PolynomialFit {
         if (interpolatePatch<SmoothedImageType>(pt.x, pt.y, window_half_size,
                                                 smoothed_input, mask, b)) {
           // fit cubic to surface by solving LSQ
-         
           cv::Mat p = invAtAAt * b;
-
           const double *a =
               p.ptr<double>(0) - 1; // 1 based indexing for convenience
 
@@ -538,23 +537,18 @@ template <typename SaddlePointType> struct PolynomialFit {
           pt.x += dx;
           pt.y += dy;
 
-
 // keep dx, dy for debugging in case the point diverges
-          #ifdef DEBUG_INDEXING
-
-           pt.a3 = std::complex<double>(dx, dy);
-          #endif
+#ifdef DEBUG_INDEXING
+          pt.a3 = std::complex<double>(dx, dy);
+#endif
           // check if it is still a monkey saddle point
           if (pt.det >= 0) {
-
-
             divergence_reason = 1; // does not have proper shape
             break;
           }
 
-          //cout << dx << endl ;
-          if (orp::calibration::detector_params.spatial_convergence_threshold > fabs(dx) &&
-              orp::calibration::detector_params.spatial_convergence_threshold > fabs(dy)) {
+          if (detector_params.spatial_convergence_threshold > fabs(dx) &&
+              detector_params.spatial_convergence_threshold > fabs(dy)) {
             // recover angles as roots of cubic equation (it assumes 0 indexed
             // array, thus pass a+1):
             solveCubicPolynomial(a + 1, roots);
@@ -570,11 +564,10 @@ template <typename SaddlePointType> struct PolynomialFit {
             divergence_reason = 2; // departed from convergence region
             break;
           }
-        }else
+        } else
           break;
       }
       if (point_diverged) {
-
 #ifdef DEBUG_INDEXING
         // keep some divergence debugging info...
         if (divergence_reason == 3) {
@@ -586,7 +579,6 @@ template <typename SaddlePointType> struct PolynomialFit {
         }
         pt.s = divergence_reason;
 #endif
-        
         pt.x = pt.y = std::numeric_limits<double>::infinity();
         ++diverged;
       }
@@ -660,6 +652,7 @@ int PolynomialFit<SaddlePoint>::initSaddleFitting(int half_kernel_size) {
   invAtAAt *= A.t();
   return nnz;
 }
+
 template <>
 int PolynomialFit<MonkeySaddlePoint>::initSaddleFitting(int half_kernel_size) {
   window_half_size = half_kernel_size;
@@ -704,7 +697,7 @@ int PolynomialFit<MonkeySaddlePointSpherical>::initSaddleFitting(
   double *a = A.ptr<double>(0);
   uint8_t *m = mask.ptr<uint8_t>(0);
   float *w = smoothingKernel.ptr<float>(0);
-  //cout << half_kernel_size << endl;
+
   for (int y = -half_kernel_size; y <= half_kernel_size; y++)
     for (int x = -half_kernel_size; x <= half_kernel_size; x++) {
       if (*w > 0) {
@@ -728,8 +721,6 @@ int PolynomialFit<MonkeySaddlePointSpherical>::initSaddleFitting(
   // compute pseudoinverse of AtA
   cv::invert(A.t() * A, invAtAAt, cv::DECOMP_SVD);
   invAtAAt *= A.t();
-  //cout << nnz << endl;
-  //cout << *w << endl ;
   return nnz;
 }
 }

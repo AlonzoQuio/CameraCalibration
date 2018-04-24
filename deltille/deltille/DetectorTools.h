@@ -289,6 +289,7 @@ bool point_comparator(const cv::Point2i &a, const cv::Point2i &b) {
   else
     return (a.x < b.x);
 }
+
 void hessianResponse(const cv::Mat &inputImage, cv::Mat &outputImage) {
   switch (inputImage.depth()) {
   case cv::DataDepth<uint8_t>::value:
@@ -307,6 +308,7 @@ void hessianResponse(const cv::Mat &inputImage, cv::Mat &outputImage) {
     throw std::runtime_error("unsupported image depth");
   }
 }
+
 void adjustGamma(cv::InputArray input, cv::OutputArray output,
                  double gamma = 1.0);
 void stretchIntensities(cv::InputArray input, cv::OutputArray output);

@@ -13,6 +13,8 @@ struct MatPixel {
     uchar g;
     uchar r;
 };
+
+
 /**
  * @details filter points outside from the mask
  * 
@@ -96,9 +98,9 @@ void segmentar(Mat &in, Mat &out, Mat adapThresh, int w, int h ) {
                 unsigned char & pixel_o = out.at<unsigned char >(i, j);
                 pixel_o = adapThresh.at<unsigned char>(i, j);
             }
-
         }
     }
+    
     for (int i = 0; i < w; i++) {
         delete intImg[i];
     }

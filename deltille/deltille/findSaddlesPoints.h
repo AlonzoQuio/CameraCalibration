@@ -86,12 +86,15 @@ float distance_to_rect(Point2f p1, Point2f p2, Point2f x) {
                                        p1.y + t * (p2.y - p1.y)));
     return sqrt(result);
 }
+
 bool sort_pattern_point_by_x(Point2f p1, Point2f p2) {
     return p1.x < p2.x;
 }
+
 bool sort_pattern_point_by_y(Point2f p1, Point2f p2) {
     return p1.y < p2.y;
 }
+
 Point2f getBarycenter(vector<Point2f> points) {
     Point2f barycenter(0, 0);
     for (int i = 0 ; i < points.size() ; i ++ ) {
@@ -135,13 +138,14 @@ vector<Point2f> getCorners(vector<Point2f> &points, Point2f barycenter) {
 void order_points_in_lines(int odd, int even, double radio, vector<Point2f>&points) {
     sort(points.begin(), points.end(), sortbyDescY);
     int coincidendes;
-    float pattern_range = 2;
+    float pattern_range = 4;
     float min_distance;
     int n_points = points.size();
     vector<Point2f> line_points;
     vector<Point2f> limit_points;
     vector<Point2f> ordered_points;
     int rows = 0;
+
     for (int i = 0; i < n_points; i++) {
         for (int j = 0; j < n_points; j++) {
             if (i != j) {
@@ -190,57 +194,135 @@ void order_points_in_lines(int odd, int even, double radio, vector<Point2f>&poin
     }
     //cout << "Ordered points " << ordered_points.size() << endl;
 }
-bool findSaddleCenters(Mat &gray , vector<Point2f> &order_points) {
 
+
+
+bool isLeft(Point2f a, Point2f b, Point2f c){
+    Point2f v1(b.x-a.x, b.y-a.y);   // Vector 1
+    Point2f v2(c.x-a.x, c.y-a.y);   // Vector 2
+    float det = v1.x*v2.y - v1.y*v2.x;  // Cross product
+    return det < 0;
+}
+
+bool isRight(Point2f a, Point2f b, Point2f c){
+    Point2f v1(b.x-a.x, b.y-a.y);   // Vector 1
+    Point2f v2(c.x-a.x, c.y-a.y);   // Vector 2
+    float det = v1.x*v2.y - v1.y*v2.x;  // Cross product
+    return det > 0;
+}
+         //                      saddle                           sorted (lines)
+void filterPoints(Mat& frame,vector<Point2f>& initialPoints, vector<Point2f>& points2f){
+    
+    vector<Point2f> removedLeftList, removedLeftAndRightList;
+    for (int i = 0; i < initialPoints.size(); ++i)
+    {
+        // circle(frame, initialPoints[i], 2, Scalar(255, 255, 20), -1);
+        if( isLeft(points2f[8], points2f[25], initialPoints[i]) 
+            || isRight(points2f[16], points2f[33], initialPoints[i]) ){
+            // circle(frame, initialPoints[i], 3, Scalar(0, 255, 255));
+        }else{
+            removedLeftList.push_back(initialPoints[i] );
+        }
+    }
+    points2f = removedLeftList;
+}
+
+void load_object_points(int cols, int rows, vector<Point2f>& object_points_image) {
+        Size boardSize(cols, rows);
+        int squareSize = 20;
+        //int squareSize_2 = 20;
+        //int squareSize = 21;
+        int squareSize_2 = 18;
+
+        object_points_image.clear();
+        //cout << "Object points " << endl;
+        for ( int i = 0; i < boardSize.height; i++ ) {
+            if (i % 2) {
+                for ( int j = 0; j < boardSize.width + 1; j++ ) {
+                    object_points_image.push_back(Point2f(j * 64.0 + 64 , float(480 - (i * 64.0 + 96.0))));
+                }
+            } else {
+                for ( int j = 0; j < boardSize.width; j++ ) {
+                    object_points_image.push_back(Point2f((2 * j + 1) / 2.0 * 64.0 + 64 , float(480 - (i * 64.0 + 96.0))));
+                }
+            }
+        }
+        
+    }
+
+
+
+bool findSaddleCenters(Mat &gray, vector<Point2f> &order_points, Mat frame, bool FP = false) {
     bool found = false ;
 
     vector<cv::Point> locations;
     PolynomialSaddleDetectorContext<MonkeySaddlePointSpherical, uint16_t, double> detector(gray);
-    vector<MonkeySaddlePointSpherical>points;
+    vector<MonkeySaddlePointSpherical> points;
+
     detector.findSaddles(points);
+
     vector<Point2f> points2f = convertToPoint2f(points);
-    cout << "Initial found " << points2f.size() << endl;
-    order_points_in_lines(9, 8, 5, points2f);
-    cout << "Points found " << points2f.size() << endl;
-    /*if (points.size() == 42) {
-        line(gray, points2f[0],  points2f[7],  Scalar(255, 0, 0), 2);
-        line(gray, points2f[8],  points2f[16], Scalar(255, 0, 0), 2);
-        line(gray, points2f[17], points2f[24], Scalar(255, 0, 0), 2);
-        line(gray, points2f[25], points2f[33], Scalar(255, 0, 0), 2);
-        line(gray, points2f[34], points2f[41], Scalar(255, 0, 0), 2);
-    }*/
+
+    Mat InitialPointsFounded = frame.clone(); // (480, 600, CV_8UC3, Scalar(0, 0, 0));
     for (int p = 0; p < points2f.size(); p++) {
-        //circle(gray, points2f[p], 3, Scalar(255, 255, 255));
-        putText(gray, to_string(p),  points2f[p], FONT_HERSHEY_COMPLEX_SMALL, 0.5,  cvScalar(255, 255, 255), 0.5);
+        circle(InitialPointsFounded, points2f[p], 2, Scalar(0, 255, 0), -1);
+        // putText(InitialPointsFounded, to_string(p),  points2f[p], FONT_HERSHEY_COMPLEX_SMALL, 0.4,  cvScalar(255, 255, 255), 1);
     }
-    if (points.size() == 42 ) {
 
-        //vector<Point2f> points2f = convertToPoint2f(points);
+    if (FP)
+    {
+            /* Filter points with ideals points  */
+            vector<Point2f> object_points_image;
+            load_object_points(8, 5, object_points_image);
 
-        //order_points_in_lines(9, 8, 5, points2f);
+            vector<Point2f> points2f_filtered;
+            for (int i = 0; i < object_points_image.size(); ++i)
+            {
+                bool found = false;
+                for (int j = 0; j < points2f.size(); ++j)//
+                {
+                    if (norm(object_points_image[i] - points2f[j] ) < 10){
+                        circle(InitialPointsFounded, points2f[j], 4, Scalar(0, 255, 255));
+                        points2f_filtered.push_back(points2f[j]);
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found){
+                    circle(InitialPointsFounded, object_points_image[i], 7, Scalar(0, 255, 255));
+                    points2f_filtered.push_back(object_points_image[i]);
+                }
+            }
+            // cout<<"points2f_filtered size: "<<42- points2f_filtered.size()<<endl;
+            points2f = points2f_filtered;
+            order_points_in_lines(9, 8, 5, points2f);
+    }else{
+        vector<Point2f> points2fInitial(points2f); 
+        order_points_in_lines(9, 8, 5, points2f);
+
+        if (points2f.size() == 42) { //'cause intial frames 
+            filterPoints(InitialPointsFounded, points2fInitial, points2f);    
+            order_points_in_lines(9, 8, 5, points2f);
+        }
+    }
+
+    for (int p = 0; p < points2f.size(); p++) {
+        circle(InitialPointsFounded, points2f[p], 1, Scalar(0, 0, 255), -1);
+        putText(InitialPointsFounded, to_string(p),  points2f[p], FONT_HERSHEY_COMPLEX_SMALL, 0.5,  cvScalar(255, 255, 255), 0.5);
+    }
+
+    if (points2f.size() == 42 ) {
         order_points.clear();
         for (int p = 0; p < points2f.size(); p++) {
             order_points.push_back(points2f[p]);
             //putText(gray, to_string(p),  order_points[p], FONT_HERSHEY_COMPLEX_SMALL, 0.5,  cvScalar(255, 255, 255), 1);
         }
-        /*line(gray, order_points[0], order_points[7], Scalar(255, 0, 0));
-        line(gray, order_points[8], order_points[16], Scalar(255, 0, 0));
-        line(gray, order_points[17], order_points[24], Scalar(255, 0, 0));
-        line(gray, order_points[25], order_points[33], Scalar(255, 0, 0));
-        line(gray, order_points[34], order_points[41], Scalar(255, 0, 0));*/
-
-        if (order_points.size() != 42) {
-            cout << "Rejected by sorting " << endl;
-        }
         found = order_points.size() == 42 ;
     }
-    imshow("gray", gray);
     waitKey(1);
-    //imwrite("results/dataset/"+to_string(i)+".png",I);
-
-    //}
     return found;
 }
+
 }
 
 
@@ -301,9 +383,7 @@ bool findSaddleCenters(Mat &gray , vector<Point2f> &order_points) {
 //                     down.push_back(points2f[i]);
 //                 }
 //             }
-
 //             //circle(I,barycenter, 5,Scalar(0,0,255));
-
 //             //drawPoints(I,points2f,Scalar(0,0,255));
 //             //drawChessboardCorners(I,Size(8,5),points2f,true);
 //             //imshow("Deltille Corner Detection",I);
@@ -312,14 +392,11 @@ bool findSaddleCenters(Mat &gray , vector<Point2f> &order_points) {
 //             i++;
 //         }
 //     }
-
 // }
 
 // int main(int argc, char const *argv[])
 // {
 //     test_one();
 //     //  test_two();
-
-
 //     return 0;
 // }

@@ -1,8 +1,10 @@
 #include <iostream>
 #include <iomanip>
+#include <string>
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 #include "deltille/findSaddlesPoints.h"
+#include "deltille/DetectorParams.h"
 
 #include "ImagePreprocessing.h"
 
@@ -206,7 +208,8 @@ public:
 			putText(m_centroids, total_str.str(), cvPoint(width * 0.15, height - 10), FONT_HERSHEY_COMPLEX_SMALL, 1, cvScalar(255, 255, 0), 1, CV_AA);
 			imshow("CentersDistribution", m_centroids);
 			imshow("CalibrationFrames", m_calibration);
-			imshow("InputFrame+Grid", frame);
+			// imshow("InputFrame+Grid", frame);
+			imshow("Undistort", frame);
 			//imshow("InputFrame+Grid+Gray", src_gray);
 			f++;
 			char t = waitKey(1);
@@ -267,7 +270,7 @@ public:
 		for (int i = 0; i < object_points_image.size(); i++) {
 			circle(frontoParallel, Point2f(object_points_image[i].x, object_points_image[i].y), 10, Scalar(255, 0, 0));
 		}
-		imshow("frontoParallel", frontoParallel);
+		imshow("FrontoParallel", frontoParallel);
 		//waitKey(0);
 		select_frames(n_frames, grid_rows, grid_cols);
 		collect_points();
@@ -323,6 +326,22 @@ public:
 	}
 };
 
+bool find_points_in_frame_FP(Mat &frame, vector<Point2f> &points) {
+		Mat frame_gray, thresh;
+		cvtColor( frame, frame_gray, CV_BGR2GRAY );
+
+			detector_params.half_kernel_size = 15;
+			detector_params.hessian_factor_threshold = 0.0;
+		bool result = findSaddleCenters(frame_gray, points, frame, true);
+			detector_params.half_kernel_size = 3;
+			detector_params.hessian_factor_threshold = 0.35;
+
+		frame_gray.release();
+		thresh.release();
+		return result;
+	}
+
+
 /**
  * @brief Search pattern points in the undistorted image, find a homography
  * to get a cannonical view, find patter points in the cannonical view and
@@ -363,7 +382,7 @@ void CameraCalibration::collect_points_fronto_parallel(int refine_type, int refi
 		imshow("Undistort", input_undistorted);
 
 		undistort(frame, input_undistorted, camera_matrix, dist_coeffs);
-		imshow("UndistortInput", input_undistorted);
+		// imshow("UndistortInput", input_undistorted);
 		if (!find_points_in_frame(input_undistorted, points_undistorted)) {
 			cout << "Not found in undistort" << endl;
 			continue;
@@ -373,18 +392,23 @@ void CameraCalibration::collect_points_fronto_parallel(int refine_type, int refi
 
 		Mat homography = cv::findHomography(points_undistorted, object_points_image);
 		Mat inv_homography = cv::findHomography(object_points_image, points_undistorted);
-		Mat img_in = input_undistorted.clone();
+		Mat img_in  = input_undistorted.clone();
 		Mat img_out = input_undistorted.clone();
 		cv::warpPerspective(img_in, img_out, homography, imageSize);
-		imshow("img_in", img_in);
-		imshow("img_out", img_out);
-		for (int p = 0; p < n_points; p++) {
+		// imshow("img_in", img_in);
+		// imshow("img_out", img_out);
+		
+		// imwrite("frontoParallel/fp_" + to_string(f)+".png", img_out);
+
+		for (int p = 0; p < n_points; p++) 
 			circle(input_undistorted, points_undistorted[p], 2, Scalar(0, 255, 0));
-		}
-		resize(img_out, img_in, cv::Size(), 0.25, 0.25);
-		img_out = img_in;
+
+		// HERE
+		// resize(img_out, img_in, cv::Size(), 0.25, 0.25);
+		// img_out = img_in;
+
 		//adaptiveThreshold(img_in,img_in,255,ADAPTIVE_THRESH_GAUSSIAN_C,THRESH_BINARY,11,2);
-		if (find_points_in_frame(img_out, points_fronto_parallel)) {
+		if (find_points_in_frame_FP(img_out, points_fronto_parallel)) {
 			cout << "Found in frontoParallel " << endl;
 			for (int p = 0; p < n_points; p++) {
 				circle(img_out, points_fronto_parallel[p], 2, Scalar(0, 255, 0));
@@ -393,8 +417,8 @@ void CameraCalibration::collect_points_fronto_parallel(int refine_type, int refi
 			vector<Point2f> object_p_canonical;
 			if (refine_fronto_parallel_type == REFINE_FP_IDEAL) {
 				for (int p = 0; p < n_points; p++) {
-					object_p_canonical.push_back(Point2f((points_fronto_parallel[p].x + object_points_image[p].x) / 2.0 * 4.0,
-					                                     (points_fronto_parallel[p].y + object_points_image[p].y) / 2.0 * 4.0));
+					object_p_canonical.push_back(Point2f((points_fronto_parallel[p].x + object_points_image[p].x) / 2.0 ,
+					                                     (points_fronto_parallel[p].y + object_points_image[p].y) / 2.0 ));
 				}
 			} else if (refine_fronto_parallel_type == REFINE_FP_INTERSECTION) {
 				for (int p = 0; p < n_points; p++) {
@@ -406,10 +430,9 @@ void CameraCalibration::collect_points_fronto_parallel(int refine_type, int refi
 					object_p_canonical.push_back(points_fronto_parallel[p]);
 				}
 			}
-			vector<Point2f> new_points2D(n_points);
 
-			vector<Point2f> new_points2D_distort(n_points);
-			perspectiveTransform(object_p_canonical, new_points2D, inv_homography);
+			vector<Point2f> new_points2D(n_points);
+			perspectiveTransform(object_p_canonical, new_points2D, inv_homography);			
 			//for (int p = 0; p < n_points; p++) {
 			//	circle(input_undistorted, new_points2D[p], 2, Scalar(0, 0, 255));
 			//	circle(frame, new_points2D[p], 2, Scalar(0, 255, 0));
@@ -417,6 +440,7 @@ void CameraCalibration::collect_points_fronto_parallel(int refine_type, int refi
 
 			//refine_points(points_undistorted, new_points2D, refine_type);
 
+			vector<Point2f> new_points2D_distort(n_points);
 			distort_points(new_points2D, new_points2D_distort);
 
 			/*for (int p = 0; p < n_points; p++) {
@@ -442,11 +466,11 @@ void CameraCalibration::collect_points_fronto_parallel(int refine_type, int refi
 	}
 	//cout << "\t" << avgColinearDistance(start_set_points);
 	//cout << "\t" << avgColinearDistance(new_set_points) << endl;
-
 }
 
 class CameraCalibrationDeltille: public CameraCalibration {
 public:
+	CameraCalibrationDeltille(): CameraCalibration(cap) {}
 	CameraCalibrationDeltille(VideoCapture &cap, int cols, int rows): CameraCalibration(cap) {
 		load_object_points(cols, rows);
 	}
@@ -454,22 +478,16 @@ public:
 		return Point2f( (pattern_points[20].x + pattern_points[21].x) / 2.0,
 		                (pattern_points[20].y + pattern_points[21].y) / 2.0);
 	}
+
 	bool find_points_in_frame(Mat &frame, vector<Point2f> &points) {
 		Mat frame_gray, thresh;
 		cvtColor( frame, frame_gray, CV_BGR2GRAY );
-		
-		//adaptiveThreshold(frame_gray,thresh,255,ADAPTIVE_THRESH_MEAN_C,THRESH_BINARY,41,12);
-        //adaptiveThreshold(frame_gray, thresh, 255, ADAPTIVE_THRESH_GAUSSIAN_C, THRESH_BINARY, 41, 12);
-        //segmentar(frame_gray, frame_gray, thresh, w, h);
-        
-		//cvtColor( frame, src_gray, CV_BGR2GRAY );
-		//adaptiveThreshold(src_gray,src_gray,255,ADAPTIVE_THRESH_GAUSSIAN_C,THRESH_BINARY,11,2);
-		//bool result = findSaddleCenters(thresh, points);
-		bool result = findSaddleCenters(frame_gray, points);
+		bool result = findSaddleCenters(frame_gray, points, frame);
 		frame_gray.release();
 		thresh.release();
 		return result;
 	}
+
 	void load_object_points(int cols, int rows) {
 		Size boardSize(cols, rows);
 		int squareSize = 20;
@@ -493,7 +511,9 @@ public:
 				}
 			}
 		}
+
 	}
+
 	void calibrate_camera() {
 		/*cout << "Running calibration " << endl;
 		vector<Mat> tvecs;
@@ -532,13 +552,36 @@ public:
 				}
 			}
 		}
+
+		cout << "set_points size: "<<set_points.size();
 		objectPoints.resize(set_points.size(), object_points);
 
 		double rms = calibrateCamera(objectPoints, set_points, image_size, camera_matrix,
 		                             dist_coeffs, rvecs, tvecs);
 		cout << camera_matrix << endl;
-		cout << dist_coeffs << endl;
+		cout << dist_coeffs   << endl;
 		cout << "rms " << rms << endl;
+	}
+	void test1(){
+
+		for (int i = 0; i < 39; ++i){
+
+			Mat img = imread("frontoParallel/fp_"+ to_string(i) + ".png", 1);
+
+			vector<Point2f> points_fronto_parallel;
+
+			if (find_points_in_frame_FP(img, points_fronto_parallel)) {
+				cout << "Found in frontoParallel " << endl;
+				for (int p = 0; p < points_fronto_parallel.size(); p++) 
+					circle(img, points_fronto_parallel[p], 2, Scalar(0, 255, 0));
+			} else
+				cout << "Not found in FP" << endl;
+
+			imshow("FrontoParallel2", img);
+
+			if (waitKey(0) == 27)
+				break;
+		}
 	}
 
 };
